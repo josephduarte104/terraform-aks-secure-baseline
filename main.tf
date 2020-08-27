@@ -136,18 +136,6 @@ module "azure_aks" {
       cluster_auto_scaling_max_count  = null
       orchestrator_version            = "1.15.11"
     }
-    system2= {
-      node_count                      = 3
-      vm_size                         = "Standard_D2_v4"
-      zones                           = ["1", "2", "3"]
-      node_os                         = "Linux"
-      labels                          = null
-      taints                          = null
-      cluster_auto_scaling            = true
-      cluster_auto_scaling_min_count  = 1
-      cluster_auto_scaling_max_count  = 4
-      orchestrator_version            = "1.16.10"
-    }
   }
 
   user_node_pools = {
@@ -162,18 +150,6 @@ module "azure_aks" {
       cluster_auto_scaling_min_count  = null
       cluster_auto_scaling_max_count  = null
       orchestrator_version            = "1.15.11"
-    }
-    pool2= {
-      node_count                      = 3
-      vm_size                         = "Standard_D2_v4"
-      zones                           = ["1", "2", "3"]
-      node_os                         = "Linux"
-      taints                          = null
-      labels                          = null
-      cluster_auto_scaling            = true
-      cluster_auto_scaling_min_count  = 1
-      cluster_auto_scaling_max_count  = 4
-      orchestrator_version            = "1.16.10"
     }
   }
 }

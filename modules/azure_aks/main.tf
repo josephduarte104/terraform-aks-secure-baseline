@@ -22,7 +22,7 @@ resource "azurerm_kubernetes_cluster" "modaks" {
     vm_size                       = var.default_node_pool.vm_size
     type                          = "VirtualMachineScaleSets"
     availability_zones            = null
-    max_pods                      = 250
+    max_pods                      = 30
     os_disk_size_gb               = 128
     vnet_subnet_id                = var.vnet_subnet_id
     node_labels                   = null 
@@ -62,7 +62,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-nodes" {
   node_count                      = each.value.node_count
   vm_size                         = each.value.vm_size
   availability_zones              = each.value.zones
-  max_pods                        = 250
+  max_pods                        = 30
   os_disk_size_gb                 = 128
   os_type                         = each.value.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
@@ -90,7 +90,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-nodes" {
   node_count                      = each.value.node_count
   vm_size                         = each.value.vm_size
   availability_zones              = each.value.zones
-  max_pods                        = 250
+  max_pods                        = 30
   os_disk_size_gb                 = 128
   os_type                         = each.value.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
