@@ -58,7 +58,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-nodes" {
   kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
   mode                            = "System"
   name                            = each.value.node_os == "Windows" ? substr(each.key, 0, 6) : substr(each.key, 0, 12)
-  orchestrator_version            = var.kubernetes_version
+  orchestrator_version            = each.value.orchestrator_version
   node_count                      = each.value.node_count
   vm_size                         = each.value.vm_size
   availability_zones              = each.value.zones
@@ -86,7 +86,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-nodes" {
   kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
   mode                            = "User"
   name                            = each.value.node_os == "Windows" ? substr(each.key, 0, 6) : substr(each.key, 0, 12)
-  orchestrator_version            = var.kubernetes_version
+  orchestrator_version            = each.value.orchestrator_version
   node_count                      = each.value.node_count
   vm_size                         = each.value.vm_size
   availability_zones              = each.value.zones

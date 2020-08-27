@@ -134,12 +134,24 @@ module "azure_aks" {
       cluster_auto_scaling            = false
       cluster_auto_scaling_min_count  = null
       cluster_auto_scaling_max_count  = null
-      orchestrator_version            = "1.15.11"
+      orchestrator_version            = module.azure_aks.control_plane_aks_version
     }
   }
 
   user_node_pools = {
     pool1 = {
+      node_count                      = 3
+      vm_size                         = "Standard_D2_v2"
+      zones                           = ["1", "2", "3"]
+      node_os                         = "Linux"
+      taints                          = null
+      labels                          = null
+      cluster_auto_scaling            = false
+      cluster_auto_scaling_min_count  = null
+      cluster_auto_scaling_max_count  = null
+      orchestrator_version            = module.azure_aks.control_plane_aks_version 
+    }
+  pool2 = {
       node_count                      = 3
       vm_size                         = "Standard_D2_v2"
       zones                           = ["1", "2", "3"]
