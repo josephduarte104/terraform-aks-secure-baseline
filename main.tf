@@ -109,7 +109,7 @@ module "azure_aks" {
   source                            = "./modules/azure_aks"
   name                              = "terra-aks"
   container_registry_id             = null
-  kubernetes_version                = "1.16.13"
+  kubernetes_version                = "1.17.9"
   resource_group_name               = azurerm_resource_group.app-rg.name
   location                          = var.location
   vnet_subnet_id                    = module.spoke_network.subnet_ids["clusternodes"]
@@ -120,7 +120,6 @@ module "azure_aks" {
   default_node_pool = {
     name                           = "default1"
     vm_size                        = "Standard_D2_v2"
-    orchestrator_version           = null
   }
   
   system_node_pools = {
@@ -134,7 +133,19 @@ module "azure_aks" {
       cluster_auto_scaling            = false
       cluster_auto_scaling_min_count  = null
       cluster_auto_scaling_max_count  = null
-      orchestrator_version            = module.azure_aks.control_plane_aks_version
+      orchestrator_version            = "1.16.10"
+    },
+    system2 = {
+      node_count                      = 3
+      vm_size                         = "Standard_D2_v2"
+      zones                           = ["1", "2", "3"]
+      node_os                         = "Linux"
+      taints                          = null
+      labels                          = null
+      cluster_auto_scaling            = false
+      cluster_auto_scaling_min_count  = null
+      cluster_auto_scaling_max_count  = null
+      orchestrator_version            = "1.16.13"
     }
   }
 
@@ -149,19 +160,7 @@ module "azure_aks" {
       cluster_auto_scaling            = false
       cluster_auto_scaling_min_count  = null
       cluster_auto_scaling_max_count  = null
-      orchestrator_version            = module.azure_aks.control_plane_aks_version 
-    }
-  pool2 = {
-      node_count                      = 3
-      vm_size                         = "Standard_D2_v2"
-      zones                           = ["1", "2", "3"]
-      node_os                         = "Linux"
-      taints                          = null
-      labels                          = null
-      cluster_auto_scaling            = false
-      cluster_auto_scaling_min_count  = null
-      cluster_auto_scaling_max_count  = null
-      orchestrator_version            = "1.15.11"
+      orchestrator_version            = "1.16.10" 
     }
   }
 }

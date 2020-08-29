@@ -10,14 +10,14 @@ resource "azurerm_kubernetes_cluster" "modaks" {
   resource_group_name             = var.resource_group_name
   dns_prefix                      = var.name
   kubernetes_version              = var.kubernetes_version
-  node_resource_group             = "${var.name}-worker"
+  node_resource_group             = "${var.resource_group_name}-worker"
   private_cluster_enabled         = var.private_cluster
   sku_tier                        = var.sla_sku
   api_server_authorized_ip_ranges = var.api_auth_ips
 
   default_node_pool {
     name                          = substr(var.default_node_pool.name, 0, 12)
-    orchestrator_version          = var.default_node_pool.orchestrator_version
+    orchestrator_version          = var.kubernetes_version
     node_count                    = 1
     vm_size                       = var.default_node_pool.vm_size
     type                          = "VirtualMachineScaleSets"
@@ -26,7 +26,7 @@ resource "azurerm_kubernetes_cluster" "modaks" {
     os_disk_size_gb               = 128
     vnet_subnet_id                = var.vnet_subnet_id
     node_labels                   = null 
-    node_taints                   = null 
+    node_taints                   = null
     enable_auto_scaling           = false
     min_count                     = null 
     max_count                     = null 
@@ -52,7 +52,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-nodes" {
       node_count
     ]
   }
-
+  
   for_each = var.system_node_pools
 
   kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
@@ -102,4 +102,22 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-nodes" {
   enable_node_public_ip           = false
 }
 
+resource "null_resource" "kubectl" {
+  triggers = {
+    default_nodes = azurerm_kubernetes_cluster.modaks.default_node_pool.0.orchestrator_version
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      for node in $(kubectl get nodes -l agentpool=default1 -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
+        kubectl taint nodes "$node" default=true:NoExecute --overwrite=true --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+      done
+    EOF
+    interpreter = ["/bin/bash", "-c"]
+    environment = {
+      KUBECONFIG = "${base64encode(azurerm_kubernetes_cluster.modaks.kube_config_raw)}"
+    }
+  }
+  depends_on = [azurerm_kubernetes_cluster_node_pool.system-nodes]
+}
 

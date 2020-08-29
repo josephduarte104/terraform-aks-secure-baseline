@@ -11,3 +11,11 @@ output control_plane_aks_version {
 output cluster_resource_id {
   value       = azurerm_kubernetes_cluster.modaks.id
 }
+
+output kube_config_raw {
+  value       = azurerm_kubernetes_cluster.modaks.kube_admin_config_raw
+}
+
+output kube_config {
+  value       = azurerm_kubernetes_cluster.modaks.kube_config
+}

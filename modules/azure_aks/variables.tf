@@ -49,7 +49,6 @@ variable "default_node_pool" {
   type = object({
     name                           = string
     vm_size                        = string
-    orchestrator_version           = string
   })
 }
 
