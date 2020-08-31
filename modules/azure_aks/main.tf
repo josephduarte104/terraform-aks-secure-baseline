@@ -37,6 +37,10 @@ resource "azurerm_kubernetes_cluster" "modaks" {
     type = "SystemAssigned"
   }
 
+  role_based_access_control {
+    enabled = true
+  }
+
   network_profile {
     docker_bridge_cidr            = "172.18.0.1/16"
     dns_service_ip                = "172.16.0.10"

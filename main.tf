@@ -165,3 +165,11 @@ module "azure_aks" {
   }
 }
 
+resource "azurerm_role_assignment" "Contributor" {
+  role_definition_name        = "Contributor"
+  scope                       = azurerm_resource_group.app-rg.id
+  principal_id                = module.azure_aks.principal_id
+}
+
+
+
