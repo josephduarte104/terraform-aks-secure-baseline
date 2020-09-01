@@ -123,25 +123,28 @@ module "azure_aks" {
   }
   
   system_node_pools = {
-    system1 = {
+    bluesystem = {
       node_count                      = 3
       vm_size                         = "Standard_D2_v2"
       zones                           = ["1", "2", "3"]
       node_os                         = "Linux"
-      taints                          = null
-      labels                          = null
+      azure_tags                      = {
+        Deployment = "Blue"
+      }
       cluster_auto_scaling            = false
       cluster_auto_scaling_min_count  = null
       cluster_auto_scaling_max_count  = null
-      orchestrator_version            = "1.16.10"
+      orchestrator_version            = "1.17.7"
     },
-    system2 = {
+    greensystem = {
       node_count                      = 3
       vm_size                         = "Standard_D2_v2"
       zones                           = ["1", "2", "3"]
       node_os                         = "Linux"
-      taints                          = null
-      labels                          = null
+      azure_tags                      = {
+        Deployment = "Green"
+        Current = "true"
+      }
       cluster_auto_scaling            = false
       cluster_auto_scaling_min_count  = null
       cluster_auto_scaling_max_count  = null
@@ -150,13 +153,13 @@ module "azure_aks" {
   }
 
   user_node_pools = {
-    pool1 = {
+    blueuser = {
       node_count                      = 3
       vm_size                         = "Standard_D2_v2"
       zones                           = ["1", "2", "3"]
       node_os                         = "Linux"
       taints                          = null
-      labels                          = null
+      azure_tags                      = null
       cluster_auto_scaling            = false
       cluster_auto_scaling_min_count  = null
       cluster_auto_scaling_max_count  = null

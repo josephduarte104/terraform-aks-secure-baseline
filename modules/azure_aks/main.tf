@@ -1,5 +1,6 @@
 resource "azurerm_kubernetes_cluster" "modaks" {
   lifecycle {
+    prevent_destroy = true
     ignore_changes = [
       default_node_pool[0].node_count
     ]
@@ -53,7 +54,7 @@ resource "azurerm_kubernetes_cluster" "modaks" {
 resource "azurerm_kubernetes_cluster_node_pool" "system-nodes" {
   lifecycle {
     ignore_changes = [
-      node_count
+      node_count, node_labels, node_taints
     ]
   }
   
@@ -66,12 +67,13 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-nodes" {
   node_count                      = each.value.node_count
   vm_size                         = each.value.vm_size
   availability_zones              = each.value.zones
+  tags                            = each.value.azure_tags
   max_pods                        = 30
   os_disk_size_gb                 = 128
   os_type                         = each.value.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
-  node_labels                     = each.value.labels
-  node_taints                     = each.value.taints
+  node_labels                     = null
+  node_taints                     = ["CriticalAddonsOnly=true:NoSchedule"]
   enable_auto_scaling             = each.value.cluster_auto_scaling
   min_count                       = each.value.cluster_auto_scaling_min_count
   max_count                       = each.value.cluster_auto_scaling_max_count
@@ -94,12 +96,13 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-nodes" {
   node_count                      = each.value.node_count
   vm_size                         = each.value.vm_size
   availability_zones              = each.value.zones
+  tags                            = each.value.azure_tags
   max_pods                        = 30
   os_disk_size_gb                 = 128
   os_type                         = each.value.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
-  node_labels                     = each.value.labels
-  node_taints                     = each.value.taints
+  node_labels                     = null
+  node_taints                     = null 
   enable_auto_scaling             = each.value.cluster_auto_scaling
   min_count                       = each.value.cluster_auto_scaling_min_count
   max_count                       = each.value.cluster_auto_scaling_max_count

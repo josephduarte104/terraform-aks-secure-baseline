@@ -52,15 +52,15 @@ variable "default_node_pool" {
   })
 }
 
+# taints and labels are not part of the interface to node pools because any change in them triggers a rebuild of the pool
 variable "system_node_pools" {
   description = "The map object to configure one or several additional node pools with number of worker nodes, worker node VM size and Availability Zones."
   type = map(object({
     node_count                     = number
     vm_size                        = string
     zones                          = list(string)
-    labels                         = map(string)
-    taints                         = list(string)
     node_os                        = string
+    azure_tags                     = map(string)
     cluster_auto_scaling           = bool
     cluster_auto_scaling_min_count = number
     cluster_auto_scaling_max_count = number
@@ -68,15 +68,15 @@ variable "system_node_pools" {
   }))
 }
 
+# taints and labels are not part of the interface to node pools because any change in them triggers a rebuild of the pool
 variable "user_node_pools" {
   description = "The map object to configure one or several additional node pools with number of worker nodes, worker node VM size and Availability Zones."
   type = map(object({
     node_count                     = number
     vm_size                        = string
     zones                          = list(string)
-    labels                         = map(string)
-    taints                         = list(string)
     node_os                        = string
+    azure_tags                     = map(string)
     cluster_auto_scaling           = bool
     cluster_auto_scaling_min_count = number
     cluster_auto_scaling_max_count = number
