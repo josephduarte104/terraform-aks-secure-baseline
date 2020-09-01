@@ -111,7 +111,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-nodes" {
 
 resource "null_resource" "kubectl" {
   triggers = {
-    default_nodes = azurerm_kubernetes_cluster.modaks.default_node_pool.0.orchestrator_version
+    default_node_version = azurerm_kubernetes_cluster.modaks.default_node_pool.0.orchestrator_version
   }
 
   provisioner "local-exec" {
@@ -125,6 +125,8 @@ resource "null_resource" "kubectl" {
       KUBECONFIG = "${base64encode(azurerm_kubernetes_cluster.modaks.kube_config_raw)}"
     }
   }
+
+  # Marking these nodes as NoExecute requires the system pool to be available
   depends_on = [azurerm_kubernetes_cluster_node_pool.system-nodes]
 }
 
