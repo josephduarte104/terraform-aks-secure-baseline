@@ -10,13 +10,13 @@ locals {
 }
 
 resource "azurerm_resource_group" "hub-rg" {
-  name     = "AKS-HUB-RG" 
+  name     = "AKS2-HUB-RG" 
   tags     = local.tags
   location = var.location
 }
 
 resource "azurerm_resource_group" "app-rg" {
-  name     = "AKS-APP-RG" 
+  name     = "AKS2-APP-RG" 
   tags     = local.tags
   location = var.location
 }

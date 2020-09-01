@@ -52,26 +52,30 @@ variable "default_node_pool" {
   })
 }
 
-# taints and labels are not part of the interface to node pools because any change in them triggers a rebuild of the pool
-variable "system_node_pools" {
-  description = "The map object to configure one or several additional node pools with number of worker nodes, worker node VM size and Availability Zones."
-  type = map(object({
-    node_count                     = number
-    vm_size                        = string
-    zones                          = list(string)
-    node_os                        = string
-    azure_tags                     = map(string)
-    cluster_auto_scaling           = bool
-    cluster_auto_scaling_min_count = number
-    cluster_auto_scaling_max_count = number
-    orchestrator_version           = string
-  }))
+variable "enable_blue_system_pool" {
+  default = false
+  type    = bool
 }
 
-# taints and labels are not part of the interface to node pools because any change in them triggers a rebuild of the pool
-variable "user_node_pools" {
-  description = "The map object to configure one or several additional node pools with number of worker nodes, worker node VM size and Availability Zones."
-  type = map(object({
+variable "enable_blue_user_pool" {
+  default = false
+  type    = bool
+}
+
+variable "enable_green_system_pool" {
+  default = false
+  type    = bool
+}
+
+variable "enable_green_user_aks" {
+  default = false
+  type    = bool
+}
+
+variable "blue_system_pool" {
+  description = "Definition for Blue System Pool"
+  type = object ({
+    name                           = "blue_system"
     node_count                     = number
     vm_size                        = string
     zones                          = list(string)
@@ -81,7 +85,55 @@ variable "user_node_pools" {
     cluster_auto_scaling_min_count = number
     cluster_auto_scaling_max_count = number
     orchestrator_version           = string
-  }))
+  })
+}
+
+variable "green_system_pool" {
+  description = "Definition for Green System Pool"
+  type = object ({
+    name                           = "green_system"
+    node_count                     = number
+    vm_size                        = string
+    zones                          = list(string)
+    node_os                        = string
+    azure_tags                     = map(string)
+    cluster_auto_scaling           = bool
+    cluster_auto_scaling_min_count = number
+    cluster_auto_scaling_max_count = number
+    orchestrator_version           = string
+  })
+}
+
+variable "blue_user_pool" {
+  description = "Definition for Blue User Pool"
+  type = object ({
+    name                           = "blue_user"
+    node_count                     = number
+    vm_size                        = string
+    zones                          = list(string)
+    node_os                        = string
+    azure_tags                     = map(string)
+    cluster_auto_scaling           = bool
+    cluster_auto_scaling_min_count = number
+    cluster_auto_scaling_max_count = number
+    orchestrator_version           = string
+  })
+}
+
+variable "green_user_pool" {
+  description = "Definition for Green User Pool"
+  type = object ({
+    name                           = "green_user"
+    node_count                     = number
+    vm_size                        = string
+    zones                          = list(string)
+    node_os                        = string
+    azure_tags                     = map(string)
+    cluster_auto_scaling           = bool
+    cluster_auto_scaling_min_count = number
+    cluster_auto_scaling_max_count = number
+    orchestrator_version           = string
+  })
 }
 
 variable "addons" {

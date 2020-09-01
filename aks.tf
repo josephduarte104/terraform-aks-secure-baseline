@@ -1,8 +1,8 @@
-module "azure_aks" {
+module "bg_aks" {
   depends_on                        = [module.routetable]
 
   source                            = "./modules/azure_aks"
-  name                              = "terra-aks"
+  name                              = "bg-aks"
   container_registry_id             = null
   kubernetes_version                = "1.17.9"
   resource_group_name               = azurerm_resource_group.app-rg.name
@@ -16,60 +16,57 @@ module "azure_aks" {
     name                           = "default"
     vm_size                        = "Standard_D2_v2"
   }
+
+  enable_blue_system_pool = false
+  blue_system_pool = {
+    node_count                      = 3
+    vm_size                         = "Standard_D2_v2"
+    zones                           = ["1", "2", "3"]
+    node_os                         = "Linux"
+    azure_tags                      = null
+    cluster_auto_scaling            = true
+    cluster_auto_scaling_min_count  = 3
+    cluster_auto_scaling_max_count  = 6
+    orchestrator_version            = "1.16.10" 
+  }
   
-  system_node_pools = {
-    bluesystem = {
-      node_count                      = 3
-      vm_size                         = "Standard_D2_v2"
-      zones                           = ["1", "2", "3"]
-      node_os                         = "Linux"
-      azure_tags                      = {
-        Deployment = "Blue"
-      }
-      cluster_auto_scaling            = true
-      cluster_auto_scaling_min_count  = 3
-      cluster_auto_scaling_max_count  = 6
-      orchestrator_version            = "1.17.7"
-    },
-    greensystem = {
-      node_count                      = 3
-      vm_size                         = "Standard_D2_v2"
-      zones                           = ["1", "2", "3"]
-      node_os                         = "Linux"
-      azure_tags                      = {
-        Deployment = "Green"
-        Current = "true"
-      }
-      cluster_auto_scaling            = true
-      cluster_auto_scaling_min_count  = 3
-      cluster_auto_scaling_max_count  = 6
-      orchestrator_version            = "1.16.13"
-    }
+  enable_green_system_pool = false
+  green_system_pool = {
+    node_count                      = 3
+    vm_size                         = "Standard_D2_v2"
+    zones                           = ["1", "2", "3"]
+    node_os                         = "Linux"
+    azure_tags                      = null
+    cluster_auto_scaling            = true
+    cluster_auto_scaling_min_count  = 3
+    cluster_auto_scaling_max_count  = 6
+    orchestrator_version            = "1.16.10" 
   }
 
-  user_node_pools = {
-    blueuser = {
-      node_count                      = 3
-      vm_size                         = "Standard_D2_v2"
-      zones                           = ["1", "2", "3"]
-      node_os                         = "Linux"
-      azure_tags                      = null
-      cluster_auto_scaling            = true
-      cluster_auto_scaling_min_count  = 3
-      cluster_auto_scaling_max_count  = 6
-      orchestrator_version            = "1.16.10" 
-    }
-    greenuser = {
-      node_count                      = 3
-      vm_size                         = "Standard_D2_v2"
-      zones                           = ["1", "2", "3"]
-      node_os                         = "Linux"
-      azure_tags                      = null
-      cluster_auto_scaling            = true
-      cluster_auto_scaling_min_count  = 3
-      cluster_auto_scaling_max_count  = 6
-      orchestrator_version            = "1.16.13" 
-    }
+  enable_blue_user_pool = false
+  blue_user_pool = {
+    node_count                      = 3
+    vm_size                         = "Standard_D2_v2"
+    zones                           = ["1", "2", "3"]
+    node_os                         = "Linux"
+    azure_tags                      = null
+    cluster_auto_scaling            = true
+    cluster_auto_scaling_min_count  = 3
+    cluster_auto_scaling_max_count  = 6
+    orchestrator_version            = "1.16.13" 
+  }
+
+  enable_green_user_pool = false
+  green_user_pool = {
+    node_count                      = 3
+    vm_size                         = "Standard_D2_v2"
+    zones                           = ["1", "2", "3"]
+    node_os                         = "Linux"
+    azure_tags                      = null
+    cluster_auto_scaling            = true
+    cluster_auto_scaling_min_count  = 3
+    cluster_auto_scaling_max_count  = 6
+    orchestrator_version            = "1.16.13" 
   }
 }
 
