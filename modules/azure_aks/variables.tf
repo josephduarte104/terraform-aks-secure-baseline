@@ -8,8 +8,8 @@ variable "container_registry_id" {
   type        = string
 }
 
-variable "kubernetes_version" {
-  description = "Kubernetes version"
+variable "control_plane_kubernetes_version" {
+  description = "Kubernetes version of control plane"
   type        = string
 }
 
@@ -52,87 +52,47 @@ variable "default_node_pool" {
   })
 }
 
-variable "enable_blue_system_pool" {
+variable "enable_blue_pool" {
   default = false
   type    = bool
 }
 
-variable "enable_blue_user_pool" {
+variable "enable_green_pool" {
   default = false
   type    = bool
 }
 
-variable "enable_green_system_pool" {
-  default = false
-  type    = bool
-}
-
-variable "enable_green_user_aks" {
-  default = false
-  type    = bool
-}
-
-variable "blue_system_pool" {
+variable "blue_pool" {
   description = "Definition for Blue System Pool"
   type = object ({
-    name                           = "blue_system"
-    node_count                     = number
-    vm_size                        = string
+    name                           = string 
+    system_min_count               = number
+    system_max_count               = number
+    user_min_count                 = number
+    user_max_count                 = number
+    system_vm_size                 = string
+    user_vm_size                   = string
     zones                          = list(string)
     node_os                        = string
     azure_tags                     = map(string)
-    cluster_auto_scaling           = bool
-    cluster_auto_scaling_min_count = number
-    cluster_auto_scaling_max_count = number
-    orchestrator_version           = string
+    pool_kubernetes_version        = string
   })
 }
 
-variable "green_system_pool" {
+variable "green_pool" {
   description = "Definition for Green System Pool"
   type = object ({
-    name                           = "green_system"
-    node_count                     = number
-    vm_size                        = string
+    name                           = string 
+    system_min_count               = number
+    system_max_count               = number
+    user_min_count                 = number
+    user_max_count                 = number
+    system_vm_size                 = string
+    user_vm_size                   = string
     zones                          = list(string)
     node_os                        = string
     azure_tags                     = map(string)
-    cluster_auto_scaling           = bool
-    cluster_auto_scaling_min_count = number
-    cluster_auto_scaling_max_count = number
-    orchestrator_version           = string
-  })
-}
-
-variable "blue_user_pool" {
-  description = "Definition for Blue User Pool"
-  type = object ({
-    name                           = "blue_user"
-    node_count                     = number
-    vm_size                        = string
-    zones                          = list(string)
-    node_os                        = string
-    azure_tags                     = map(string)
-    cluster_auto_scaling           = bool
-    cluster_auto_scaling_min_count = number
-    cluster_auto_scaling_max_count = number
-    orchestrator_version           = string
-  })
-}
-
-variable "green_user_pool" {
-  description = "Definition for Green User Pool"
-  type = object ({
-    name                           = "green_user"
-    node_count                     = number
-    vm_size                        = string
-    zones                          = list(string)
-    node_os                        = string
-    azure_tags                     = map(string)
-    cluster_auto_scaling           = bool
-    cluster_auto_scaling_min_count = number
-    cluster_auto_scaling_max_count = number
-    orchestrator_version           = string
+    pool_kubernetes_version        = string
   })
 }
 

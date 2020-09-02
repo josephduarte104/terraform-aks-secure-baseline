@@ -1,6 +1,13 @@
+locals {
+  bluesystem_name     = "${var.blue_pool.name}system"
+  blueuser_name       = "${var.blue_pool.name}user"
+  greensystem_name    = "${var.green_pool.name}system"
+  greenuser_name      = "${var.green_pool.name}user"
+}
+
 resource "azurerm_kubernetes_cluster" "modaks" {
   lifecycle {
-    prevent_destroy = true
+    #prevent_destroy = true
     ignore_changes = [
       default_node_pool[0].node_count
     ]
@@ -10,7 +17,7 @@ resource "azurerm_kubernetes_cluster" "modaks" {
   location                        = var.location
   resource_group_name             = var.resource_group_name
   dns_prefix                      = var.name
-  kubernetes_version              = var.kubernetes_version
+  kubernetes_version              = var.control_plane_kubernetes_version
   node_resource_group             = "${var.resource_group_name}-worker"
   private_cluster_enabled         = var.private_cluster
   sku_tier                        = var.sla_sku
@@ -18,7 +25,7 @@ resource "azurerm_kubernetes_cluster" "modaks" {
 
   default_node_pool {
     name                          = substr(var.default_node_pool.name, 0, 12)
-    orchestrator_version          = var.kubernetes_version
+    orchestrator_version          = var.control_plane_kubernetes_version
     node_count                    = 1
     vm_size                       = var.default_node_pool.vm_size
     type                          = "VirtualMachineScaleSets"
@@ -57,78 +64,24 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-green-pool" {
       node_count, node_labels, node_taints
     ]
   }
-  count                           = var.green_system_pool.enable ? 1 : 0
+  count                           = var.enable_green_pool ? 1 : 0
   kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
   mode                            = "System"
-  name                            = var.green_system_pool.node_os == "Windows" ? substr(var.green_system_pool.name, 0, 6) : substr(var.green_system_pool.name, 0, 12)
-  orchestrator_version            = var.green_system_pool.orchestrator_version
-  node_count                      = var.green_system_pool.node_count
-  vm_size                         = var.green_system_pool.vm_size
-  availability_zones              = var.green_system_pool.zones
-  tags                            = var.green_system_pool.azure_tags
+  name                            = var.blue_pool.node_os == "Windows" ? substr(local.greensystem_name, 0, 6) : substr(local.greensystem_name, 0, 12)
+  orchestrator_version            = var.green_pool.pool_kubernetes_version
+  node_count                      = var.green_pool.system_min_count 
+  vm_size                         = var.green_pool.system_vm_size
+  availability_zones              = ["1", "2", "3"]
+  tags                            = var.green_pool.azure_tags
   max_pods                        = 30
   os_disk_size_gb                 = 128
-  os_type                         = var.green_system_pool.node_os
+  os_type                         = var.green_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
   node_labels                     = null
   node_taints                     = ["CriticalAddonsOnly=true:NoSchedule"]
-  enable_auto_scaling             = var.green_system_pool.cluster_auto_scaling
-  min_count                       = var.green_system_pool.cluster_auto_scaling_min_count
-  max_count                       = var.green_system_pool.cluster_auto_scaling_max_count
-  enable_node_public_ip           = false
-}
-
-resource "azurerm_kubernetes_cluster_node_pool" "system-blue-pool" {
-  lifecycle {
-    ignore_changes = [
-      node_count, node_labels, node_taints
-    ]
-  }
-  count                           = var.blue_system_pool.enable ? 1 : 0
-  kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
-  mode                            = "System"
-  name                            = var.blue_system_pool.node_os == "Windows" ? substr(var.blue_system_pool.name, 0, 6) : substr(var.blue_system_pool.name, 0, 12)
-  orchestrator_version            = var.blue_system_pool.orchestrator_version
-  node_count                      = var.blue_system_pool.node_count
-  vm_size                         = var.blue_system_pool.vm_size
-  availability_zones              = var.blue_system_pool.zones
-  tags                            = var.blue_system_pool.azure_tags
-  max_pods                        = 30
-  os_disk_size_gb                 = 128
-  os_type                         = var.blue_system_pool.node_os
-  vnet_subnet_id                  = var.vnet_subnet_id
-  node_labels                     = null
-  node_taints                     = ["CriticalAddonsOnly=true:NoSchedule"]
-  enable_auto_scaling             = var.blue_system_pool.cluster_auto_scaling
-  min_count                       = var.blue_system_pool.cluster_auto_scaling_min_count
-  max_count                       = var.blue_system_pool.cluster_auto_scaling_max_count
-  enable_node_public_ip           = false
-}
-
-resource "azurerm_kubernetes_cluster_node_pool" "user-blue-pool" {
-  lifecycle {
-    ignore_changes = [
-      node_count, node_labels, node_taints
-    ]
-  }
-  count                           = var.blue_user_pool.enable ? 1 : 0
-  kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
-  mode                            = "System"
-  name                            = var.blue_user_pool.node_os == "Windows" ? substr(var.blue_user_pool.name, 0, 6) : substr(var.blue_user_pool.name, 0, 12)
-  orchestrator_version            = var.blue_user_pool.orchestrator_version
-  node_count                      = var.blue_user_pool.node_count
-  vm_size                         = var.blue_user_pool.vm_size
-  availability_zones              = var.blue_user_pool.zones
-  tags                            = var.blue_user_pool.azure_tags
-  max_pods                        = 30
-  os_disk_size_gb                 = 128
-  os_type                         = var.blue_user_pool.node_os
-  vnet_subnet_id                  = var.vnet_subnet_id
-  node_labels                     = null
-  node_taints                     = ["CriticalAddonsOnly=true:NoSchedule"]
-  enable_auto_scaling             = var.blue_user_pool.cluster_auto_scaling
-  min_count                       = var.blue_user_pool.cluster_auto_scaling_min_count
-  max_count                       = var.blue_user_pool.cluster_auto_scaling_max_count
+  enable_auto_scaling             = true 
+  min_count                       = var.green_pool.system_min_count
+  max_count                       = var.green_pool.system_max_count
   enable_node_public_ip           = false
 }
 
@@ -138,26 +91,80 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-green-pool" {
       node_count, node_labels, node_taints
     ]
   }
-  count                           = var.green_user_pool.enable ? 1 : 0
+  count                           = var.enable_green_pool ? 1 : 0
   kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
-  mode                            = "System"
-  name                            = var.green_user_pool.node_os == "Windows" ? substr(var.green_user_pool.name, 0, 6) : substr(var.green_user_pool.name, 0, 12)
-  orchestrator_version            = var.green_user_pool.orchestrator_version
-  node_count                      = var.green_user_pool.node_count
-  vm_size                         = var.green_user_pool.vm_size
-  availability_zones              = var.green_user_pool.zones
-  tags                            = var.green_user_pool.azure_tags
+  mode                            = "User"
+  name                            = var.blue_pool.node_os == "Windows" ? substr(local.greenuser_name, 0, 6) : substr(local.greenuser_name, 0, 12)
+  orchestrator_version            = var.green_pool.pool_kubernetes_version
+  node_count                      = var.green_pool.user_min_count 
+  vm_size                         = var.green_pool.user_vm_size
+  availability_zones              = ["1", "2", "3"]
+  tags                            = var.green_pool.azure_tags
   max_pods                        = 30
   os_disk_size_gb                 = 128
-  os_type                         = var.green_user_pool.node_os
+  os_type                         = var.green_pool.node_os
+  vnet_subnet_id                  = var.vnet_subnet_id
+  node_labels                     = null
+  node_taints                     = null 
+  enable_auto_scaling             = true 
+  min_count                       = var.green_pool.user_min_count
+  max_count                       = var.green_pool.user_max_count
+  enable_node_public_ip           = false
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "system-blue-pool" {
+  lifecycle {
+    ignore_changes = [
+      node_count, node_labels, node_taints
+    ]
+  }
+  count                           = var.enable_blue_pool ? 1 : 0
+  kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
+  mode                            = "System"
+  name                            = var.blue_pool.node_os == "Windows" ? substr(local.bluesystem_name, 0, 6) : substr(local.bluesystem_name, 0, 12)
+  orchestrator_version            = var.blue_pool.pool_kubernetes_version
+  node_count                      = var.blue_pool.system_min_count 
+  vm_size                         = var.blue_pool.system_vm_size
+  availability_zones              = ["1", "2", "3"]
+  tags                            = var.blue_pool.azure_tags
+  max_pods                        = 30
+  os_disk_size_gb                 = 128
+  os_type                         = var.blue_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
   node_labels                     = null
   node_taints                     = ["CriticalAddonsOnly=true:NoSchedule"]
-  enable_auto_scaling             = var.green_user_pool.cluster_auto_scaling
-  min_count                       = var.green_user_pool.cluster_auto_scaling_min_count
-  max_count                       = var.green_user_pool.cluster_auto_scaling_max_count
+  enable_auto_scaling             = true 
+  min_count                       = var.blue_pool.system_min_count
+  max_count                       = var.blue_pool.system_max_count
   enable_node_public_ip           = false
 }
+
+resource "azurerm_kubernetes_cluster_node_pool" "user-blue-pool" {
+  lifecycle {
+    ignore_changes = [
+      node_count, node_labels, node_taints
+    ]
+  } 
+  count                           = var.enable_blue_pool ? 1 : 0
+  kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
+  mode                            = "User"
+  name                            = var.blue_pool.node_os == "Windows" ? substr(local.blueuser_name, 0, 6) : substr(local.blueuser_name, 0, 12)
+  orchestrator_version            = var.blue_pool.pool_kubernetes_version
+  node_count                      = var.blue_pool.user_min_count 
+  vm_size                         = var.blue_pool.user_vm_size
+  availability_zones              = ["1", "2", "3"]
+  tags                            = var.blue_pool.azure_tags
+  max_pods                        = 30
+  os_disk_size_gb                 = 128
+  os_type                         = var.blue_pool.node_os
+  vnet_subnet_id                  = var.vnet_subnet_id
+  node_labels                     = null
+  node_taints                     = null
+  enable_auto_scaling             = true 
+  min_count                       = var.blue_pool.user_min_count
+  max_count                       = var.blue_pool.user_max_count
+  enable_node_public_ip           = false
+} 
 
 resource "null_resource" "kubectl" {
   triggers = {
@@ -175,8 +182,7 @@ resource "null_resource" "kubectl" {
       KUBECONFIG = "${base64encode(azurerm_kubernetes_cluster.modaks.kube_config_raw)}"
     }
   }
-
   # Marking these nodes as NoExecute requires the system pool to be available
-  depends_on = [azurerm_kubernetes_cluster_node_pool.system-nodes]
+  depends_on = [azurerm_kubernetes_cluster_node_pool.system-green-pool, azurerm_kubernetes_cluster_node_pool.system-blue-pool]
 }
 
