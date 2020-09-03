@@ -316,7 +316,7 @@ resource "null_resource" "kubectl" {
   provisioner "local-exec" {
     command = <<EOF
       for node in $(kubectl get nodes -l agentpool=default1 -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
-        kubectl taint nodes "$node" default=true:NoExecute --overwrite=true --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+        kubectl taint nodes "$node" default=true:NoSchedule --overwrite=true --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
       done
     EOF
     interpreter = ["/bin/bash", "-c"]
