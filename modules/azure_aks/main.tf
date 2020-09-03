@@ -77,7 +77,10 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-green-pool" {
   os_disk_size_gb                 = 128
   os_type                         = var.green_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
-  node_labels                     = null
+  node_labels                     = {
+    nodepoolcolor="green"
+    nodepoolmode="system"
+  }
   node_taints                     = ["CriticalAddonsOnly=true:NoSchedule"]
   enable_auto_scaling             = true 
   min_count                       = var.green_pool.system_min_count
@@ -104,7 +107,10 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-green-pool" {
   os_disk_size_gb                 = 128
   os_type                         = var.green_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
-  node_labels                     = null
+  node_labels                     = {
+    nodepoolcolor="green"
+    nodepoolmode="user"
+  }
   node_taints                     = null 
   enable_auto_scaling             = true 
   min_count                       = var.green_pool.user_min_count
@@ -131,7 +137,10 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-blue-pool" {
   os_disk_size_gb                 = 128
   os_type                         = var.blue_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
-  node_labels                     = null
+  node_labels                     = {
+    nodepoolcolor="blue"
+    nodepoolmode="system"
+  }
   node_taints                     = ["CriticalAddonsOnly=true:NoSchedule"]
   enable_auto_scaling             = true 
   min_count                       = var.blue_pool.system_min_count
@@ -158,13 +167,146 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-blue-pool" {
   os_disk_size_gb                 = 128
   os_type                         = var.blue_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
-  node_labels                     = null
+  node_labels                     = {
+    nodepoolcolor="blue"
+    nodepoolmode="user"
+  }
   node_taints                     = null
   enable_auto_scaling             = true 
   min_count                       = var.blue_pool.user_min_count
   max_count                       = var.blue_pool.user_max_count
   enable_node_public_ip           = false
 } 
+
+resource "null_resource" "drain-green" {
+  triggers = {
+    drain_green   = var.drain_green_pool
+    raw_config    = azurerm_kubernetes_cluster.modaks.kube_config_raw
+  }
+  count        = var.drain_green_pool ? 1 : 0
+
+  provisioner "local-exec" {
+    when    = destroy 
+    command = <<EOF
+      echo "Will untaint Green nodepool."
+      for node in $(kubectl get nodes -l nodepoolcolor=green -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
+        kubectl uncordon "$node" --kubeconfig <(echo $KUBECONFIG | base64 --decode)
+        kubectl taint nodes "$node" GettingUpgraded=true:NoSchedule- --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+      done
+    EOF
+    interpreter = ["/bin/bash", "-c"]
+    environment = {
+      KUBECONFIG = "${base64encode(self.triggers.raw_config)}"
+    }
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      if [ "${var.enable_green_pool}" != "true" ]; then
+        echo "Green pool is not enabled.  Cannot drain Blue pool."
+        exit 0
+      fi
+
+      if [ "${var.enable_blue_pool}" != "true" ]; then
+        echo "Blue pool not enabled.  Cannot drain green pool because there is nowhere for the pods to go."
+        exit 1
+      fi      
+
+      if [ "${var.drain_blue_pool}" == "true" ]; then
+        echo "Blue pool is already being drained.  Cannot drain Green."
+        exit 1
+      fi
+
+      # Check if green can be scheduled
+      NUMBER_NODES_AVAILABLE=$(kubectl get nodes -l nodepoolcolor=blue --no-headers --kubeconfig <(echo $KUBECONFIG | base64 --decode) | grep -v SchedulingDisabled)
+      echo "Nodes available in Blue Pool=$NUMBER_NODES_AVAILABLE"
+      if [ "$NUMBER_NODES_AVAILABLE" -lt 1 ]; then
+        echo "No Blue Nodes available to schedule on.  Check the taints for NoSchedule"
+        exit 1
+      fi
+
+      for node in $(kubectl get nodes -l nodepoolcolor=green -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
+        kubectl taint nodes "$node" GettingUpgraded=true:NoSchedule --overwrite=true --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+      done
+
+      for node in $(kubectl get nodes -l nodepoolcolor=green -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
+        kubectl drain "$node" --ignore-daemonsets --delete-local-data --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+      done
+    EOF
+    interpreter = ["/bin/bash", "-c"]
+    environment = {
+      KUBECONFIG = "${base64encode(azurerm_kubernetes_cluster.modaks.kube_config_raw)}"
+    }
+  }
+  # Marking these nodes as NoExecute requires the system pool to be available
+  depends_on = [azurerm_kubernetes_cluster_node_pool.system-blue-pool, azurerm_kubernetes_cluster_node_pool.user-blue-pool, azurerm_kubernetes_cluster_node_pool.system-green-pool, azurerm_kubernetes_cluster_node_pool.user-green-pool]
+}
+
+
+resource "null_resource" "drain-blue" {
+  triggers = {
+    drain_blue    = var.drain_blue_pool
+    raw_config    = azurerm_kubernetes_cluster.modaks.kube_config_raw
+  }
+  count     = var.drain_blue_pool ? 1 : 0
+
+  provisioner "local-exec" {
+    when    = destroy 
+    command = <<EOF
+      echo "Will untaint Blue nodepool."
+      for node in $(kubectl get nodes -l nodepoolcolor=blue -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
+        kubectl uncordon "$node" --kubeconfig <(echo $KUBECONFIG | base64 --decode)
+        kubectl taint nodes "$node" GettingUpgraded=true:NoSchedule- --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+      done
+    EOF
+    interpreter = ["/bin/bash", "-c"]
+    environment = {
+      KUBECONFIG = "${base64encode(self.triggers.raw_config)}"
+    }
+  }
+
+  provisioner "local-exec" {
+    command = <<EOF
+      if [ "${var.enable_blue_pool}" != "true" ]; then
+        echo "Blue pool is not enabled.  Cannot drain Green pool."
+        exit 0
+      fi
+
+      if [ "${var.enable_green_pool}" != "true" ]; then
+        echo "Green pool not enabled.  Cannot drain blue pool because there is nowhere for the pods to go."
+        exit 1
+      fi      
+      
+      if [ "${var.drain_green_pool}" == "true" ]; then
+        echo "Green pool is already being drained.  Cannot drain Blue."
+        exit 1
+      fi
+
+      # Check if green can be scheduled
+      NUMBER_NODES_AVAILABLE=$(kubectl get nodes -l nodepoolcolor=green --no-headers --kubeconfig <(echo $KUBECONFIG | base64 --decode) | grep -v SchedulingDisabled)
+      echo "Nodes available in Green Pool=$NUMBER_NODES_AVAILABLE"
+      if [ "$NUMBER_NODES_AVAILABLE" -lt 1 ]; then
+        echo "No Green Nodes available to schedule on.  Check the taints for NoSchedule"
+        exit 1
+      fi
+
+      for node in $(kubectl get nodes -l nodepoolcolor=blue -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
+        kubectl taint nodes "$node" GettingUpgraded=true:NoSchedule --overwrite=true --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+      done
+
+      for node in $(kubectl get nodes -l nodepoolcolor=blue -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
+        kubectl drain "$node" --ignore-daemonsets --delete-local-data --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+      done
+    EOF
+    interpreter = ["/bin/bash", "-c"]
+    environment = {
+      KUBECONFIG = "${base64encode(azurerm_kubernetes_cluster.modaks.kube_config_raw)}"
+    }
+  }
+  # Marking these nodes as NoExecute requires the system pool to be available
+  depends_on = [azurerm_kubernetes_cluster_node_pool.system-blue-pool, azurerm_kubernetes_cluster_node_pool.user-blue-pool, azurerm_kubernetes_cluster_node_pool.system-green-pool, azurerm_kubernetes_cluster_node_pool.user-green-pool]
+}
+
 
 resource "null_resource" "kubectl" {
   triggers = {

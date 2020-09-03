@@ -17,22 +17,24 @@ module "azure_aks" {
     vm_size                        = "Standard_D2_v2"
   }
 
-  enable_blue_pool = false
+  enable_blue_pool                  = true
+  drain_blue_pool                   = false
   blue_pool = {
     name                            = "blue"
     system_min_count                = 1 
     system_max_count                = 3
     user_min_count                  = 1 
-    user_max_count                  = 3
+    user_max_count                  = 6
     system_vm_size                  = "Standard_D2_v2"
     user_vm_size                    = "Standard_D2_v2"
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
-    pool_kubernetes_version         = "1.16.10" 
+    pool_kubernetes_version         = "1.16.13" 
   }
   
-  enable_green_pool = true 
+  enable_green_pool                 = true 
+  drain_green_pool                  = true 
   green_pool = {
     name                            = "green"
     system_min_count                = 1 
@@ -44,7 +46,7 @@ module "azure_aks" {
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
-    pool_kubernetes_version         = "1.16.13" 
+    pool_kubernetes_version         = "1.17.7" 
   }
 }
 

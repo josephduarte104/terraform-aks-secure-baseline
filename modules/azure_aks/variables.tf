@@ -47,8 +47,8 @@ variable "api_auth_ips" {
 variable "default_node_pool" {
   description = "The object to configure the default node pool with number of worker nodes, worker node VM size and Availability Zones."
   type = object({
-    name                           = string
-    vm_size                        = string
+    name       = string
+    vm_size    = string
   })
 }
 
@@ -58,6 +58,16 @@ variable "enable_blue_pool" {
 }
 
 variable "enable_green_pool" {
+  default = false
+  type    = bool
+}
+
+variable "drain_blue_pool" {
+  default = false
+  type    = bool
+}
+
+variable "drain_green_pool" {
   default = false
   type    = bool
 }
