@@ -20,7 +20,7 @@ module "azure_aks" {
   # enable_blue_pool=false will delete bluesystem and blueuser node pools
   # drain_blue_pool=true will taint and drain the blue node pool (bluesystem and blueuser).  It does NOT delete it.
   enable_blue_pool                  = true
-  drain_blue_pool                   = true 
+  drain_blue_pool                   = false
   blue_pool = {
     name                            = "blue"
     system_min_count                = 1 
@@ -38,8 +38,8 @@ module "azure_aks" {
   # enable_green_pool=true will ensure 2 node pools exist (greensystem, greenuser)
   # enable_green_pool=false will delete greensystem and greenuser node pools
   # drain_green_pool=true will taint and drain the green node pool (greensystem and greenuser).  It does NOT delete it.
-  enable_green_pool                 = true
-  drain_green_pool                  = false 
+  enable_green_pool                 = false
+  drain_green_pool                  = false
   green_pool = {
     name                            = "green"
     system_min_count                = 1 

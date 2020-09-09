@@ -54,6 +54,57 @@ resource "azurerm_firewall_network_rule_collection" "dns" {
   }
 }
 
+resource "azurerm_firewall_network_rule_collection" "ssh" {
+  name                = "ssh"
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 103
+  action              = "Allow"
+
+  rule {
+    description           = "aks global requirements"
+    name                  = "allow network"
+    source_addresses      = ["*"]
+    destination_ports     = ["22"]
+    destination_addresses = ["*"]
+    protocols             = ["TCP"]
+  }
+}
+
+resource "azurerm_firewall_network_rule_collection" "tunnelfront" {
+  name                = "tunnelfront"
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 104
+  action              = "Allow"
+
+  rule {
+    description           = "tunnelfront"
+    name                  = "allow network"
+    source_addresses      = ["*"]
+    destination_ports     = ["1194"]
+    destination_addresses = ["*"]
+    protocols             = ["UDP"]
+  }
+}
+
+resource "azurerm_firewall_network_rule_collection" "traefikmonitor" {
+  name                = "traefikmonitor"
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 105
+  action              = "Allow"
+
+  rule {
+    description           = "traefik monitor requirements"
+    name                  = "allow network"
+    source_addresses      = ["*"]
+    destination_ports     = ["9000"]
+    destination_addresses = ["*"]
+    protocols             = ["TCP"]
+  }
+}
+
 resource "azurerm_firewall_network_rule_collection" "servicetags" {
   name                = "servicetags"
   azure_firewall_name = azurerm_firewall.fw.name
@@ -173,6 +224,7 @@ resource "azurerm_firewall_application_rule_collection" "publicimages" {
   }
 }
 
+# Total hack to allow all outbound.  Should be changed
 resource "azurerm_firewall_application_rule_collection" "test" {
   name                = "test"
   azure_firewall_name = azurerm_firewall.fw.name

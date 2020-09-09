@@ -8,7 +8,7 @@ resource "azurerm_route_table" "rt" {
     name                   = "kubenetfw_fw_r"
     address_prefix         = "0.0.0.0/0"
     next_hop_type          = "VirtualAppliance"
-    next_hop_in_ip_address = var.firewal_private_ip
+    next_hop_in_ip_address = var.firewall_private_ip
   }
 }
 

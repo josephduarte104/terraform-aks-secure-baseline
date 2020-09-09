@@ -18,7 +18,7 @@ variable r_name {
   type        = string
 }
 
-variable firewal_private_ip {
+variable firewall_private_ip {
   description = "Firewall private IP"
   type        = string
 }
