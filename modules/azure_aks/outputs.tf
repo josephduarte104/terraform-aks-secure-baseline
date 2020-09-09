@@ -19,3 +19,11 @@ output kube_config_raw {
 output kube_config {
   value       = azurerm_kubernetes_cluster.modaks.kube_config
 }
+
+output private_fqdn {
+  value       = azurerm_kubernetes_cluster.modaks.private_fqdn
+}
+
+output node_resource_group {
+  value       = azurerm_kubernetes_cluster.modaks.node_resource_group
+}

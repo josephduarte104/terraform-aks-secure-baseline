@@ -9,7 +9,7 @@ module "azure_aks" {
   location                          = var.location
   vnet_subnet_id                    = module.spoke_network.subnet_ids["clusternodes"]
   api_auth_ips                      = null
-  private_cluster                   = false
+  private_cluster                   = true 
   sla_sku                           = "Free"
 
   default_node_pool = {

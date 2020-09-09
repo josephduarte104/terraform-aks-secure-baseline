@@ -40,6 +40,10 @@ module "hub_network" {
     {
       name : "AzureBastionSubnet"
       address_prefixes : ["10.0.2.0/24"]
+    },
+    {
+      name : "Default"
+      address_prefixes : ["10.0.3.0/24"]
     }
   ]
 }
@@ -123,3 +127,17 @@ resource "azurerm_bastion_host" "bastion" {
     public_ip_address_id = azurerm_public_ip.bastion.id
   }
 }
+
+module "jumpbox" {
+  source                  = "./modules/jumpbox"
+  tags                    = local.tags
+  location                = var.location
+  resource_group          = azurerm_resource_group.app-rg.name 
+  vnet_id                 = module.hub_network.vnet_id
+  subnet_id               = module.hub_network.subnet_ids["Default"]
+  dns_zone_name           = join(".", slice(split(".", module.aks.private_fqdn), 1, length(split(".", module.aks.private_fqdn))))
+  dns_zone_resource_group = module.aks.node_resource_group
+
+  depends_on              = [module.aks]
+}
+
