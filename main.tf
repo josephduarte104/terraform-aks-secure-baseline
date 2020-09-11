@@ -135,9 +135,20 @@ module "jumpbox" {
   resource_group          = azurerm_resource_group.app-rg.name 
   vnet_id                 = module.hub_network.vnet_id
   subnet_id               = module.hub_network.subnet_ids["Default"]
-  dns_zone_name           = join(".", slice(split(".", module.aks.private_fqdn), 1, length(split(".", module.aks.private_fqdn))))
-  dns_zone_resource_group = module.aks.node_resource_group
+  dns_zone_name           = join(".", slice(split(".", module.azure_aks.private_fqdn), 1, length(split(".", module.azure_aks.private_fqdn)))) 
+  dns_zone_resource_group = module.azure_aks.node_resource_group
+  add_to_dns              = false
 
-  depends_on              = [module.aks]
+  depends_on              = [module.azure_aks]
 }
 
+# module "appgateway" {
+#   source                  = "./modules/app_gateway"
+#   name                    = "appgateway"
+#   tags                    = local.tags
+#   location                = var.location
+#   resource_group          = azurerm_resource_group.app-rg.name 
+#   subnet_id               = module.spoke_network.subnet_ids["applicationgateways"]
+
+#   depends_on              = [module.spoke_network]
+# }

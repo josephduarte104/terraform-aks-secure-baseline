@@ -90,13 +90,15 @@ resource "azurerm_linux_virtual_machine" "jumpbox" {
       "echo 'deb https://apt.kubernetes.io/ kubernetes-xenial main' | sudo tee -a /etc/apt/sources.list.d/kubernetes.list",
       "sudo apt-get update",
       "sudo apt-get install -y kubectl",
-      "curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash"
+      "curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash",
+      "curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash"
     ]
   }
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "hublink" {
   name                  = "hubnetdnsconfig"
+  count                 = var.add_to_dns ? 1 : 0
   resource_group_name   = var.dns_zone_resource_group
   private_dns_zone_name = var.dns_zone_name
   virtual_network_id    = var.vnet_id

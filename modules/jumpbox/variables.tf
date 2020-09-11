@@ -36,3 +36,8 @@ variable tags {
   description = "Tags to apply to resources"
   default     = null
 }
+
+variable add_to_dns {
+  description = "Add this jumpbox to DNS"
+  type        = bool
+}

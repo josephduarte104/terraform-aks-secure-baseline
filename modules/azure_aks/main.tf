@@ -50,11 +50,11 @@ resource "azurerm_kubernetes_cluster" "modaks" {
   }
 
   network_profile {
-    docker_bridge_cidr            = "172.17.0.1/16"
-    dns_service_ip                = "10.2.0.10"
+    docker_bridge_cidr            = "172.18.0.1/16"
+    dns_service_ip                = "172.16.0.10"
     network_plugin                = "azure"
     outbound_type                 = "userDefinedRouting"
-    service_cidr                  = "10.2.0.0/24"
+    service_cidr                  = "172.16.0.0/16"
   }
 }
 
@@ -316,7 +316,7 @@ resource "null_resource" "kubectl" {
   provisioner "local-exec" {
     command = <<EOF
       for node in $(kubectl get nodes -l agentpool=default1 -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
-        kubectl taint nodes "$node" default=true:NoSchedule --overwrite=true --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
+        kubectl taint nodes "$node" default=true:NoExecute --overwrite=true --kubeconfig <(echo $KUBECONFIG | base64 --decode) 
       done
     EOF
     interpreter = ["/bin/bash", "-c"]
