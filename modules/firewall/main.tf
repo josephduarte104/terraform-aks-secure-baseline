@@ -88,18 +88,18 @@ resource "azurerm_firewall_network_rule_collection" "tunnelfront" {
   }
 }
 
-resource "azurerm_firewall_network_rule_collection" "traefikmonitor" {
-  name                = "traefikmonitor"
+resource "azurerm_firewall_network_rule_collection" "http-and-https" {
+  name                = "http-and-https"
   azure_firewall_name = azurerm_firewall.fw.name
   resource_group_name = var.resource_group
   priority            = 105
   action              = "Allow"
 
   rule {
-    description           = "traefik monitor requirements"
-    name                  = "allow network"
+    description           = "allow http-https"
+    name                  = "allow http-https"
     source_addresses      = ["*"]
-    destination_ports     = ["9000"]
+    destination_ports     = ["80", "443"]
     destination_addresses = ["*"]
     protocols             = ["TCP"]
   }
@@ -164,6 +164,7 @@ resource "azurerm_firewall_application_rule_collection" "aksbasics" {
   }
 }
 
+
 resource "azurerm_firewall_application_rule_collection" "osupdates" {
   name                = "osupdates"
   azure_firewall_name = azurerm_firewall.fw.name
@@ -180,7 +181,9 @@ resource "azurerm_firewall_application_rule_collection" "osupdates" {
       "security.ubuntu.com",
       "ntp.ubuntu.com",
       "packages.microsoft.com",
-      "snapcraft.io"
+      "snapcraft.io",
+      "azure.archive.ubuntu.com",
+      "changelogs.ubuntu.com"
     ]
 
     protocol {
@@ -245,6 +248,107 @@ resource "azurerm_firewall_application_rule_collection" "test" {
       port = "80"
       type = "Http"
     }
+
+    protocol {
+      port = "443"
+      type = "Https"
+    }
+  }
+}
+
+resource "azurerm_firewall_application_rule_collection" "nodes-to-api-server" {
+  name                = "nodes-to-api-server"
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 200
+  action              = "Allow"
+##########################
+# Needs to be tightened up
+  rule {
+    name             = "allow api network"
+    source_addresses = ["*"]
+
+    target_fqdns = [
+       "*.hcp.eastus2.azmk8s.io",
+       "*.tun.eastus2.azmk8s.io"
+    ]
+
+    protocol {
+      port = "443"
+      type = "Https"
+    }
+  }
+}
+
+resource "azurerm_firewall_application_rule_collection" "azure-monitor" {
+  name                = "azure-monitor"
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 201
+  action              = "Allow"
+##########################
+# Needs to be tightened up
+  rule {
+    name             = "allow azure-monitor"
+    source_addresses = ["*"]
+
+    target_fqdns = [
+      "dc.services.visualstudio.com",
+      "*.ods.opinsights.azure.com",
+      "*.oms.opinsights.azure.com",
+      "*.microsoftonline.com",
+      "*.monitoring.azure.com"     
+    ]
+
+    protocol {
+      port = "443"
+      type = "Https"
+    }
+  }
+}
+
+resource "azurerm_firewall_application_rule_collection" "azure-policy" {
+  name                = "azure-policy"
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 202
+  action              = "Allow"
+##########################
+# Needs to be tightened up
+  rule {
+    name             = "allow azure-monitor"
+    source_addresses = ["*"]
+
+    target_fqdns = [
+      "gov-prod-policy-data.trafficmanager.net",
+      "raw.githubusercontent.com",
+      "*.gk.eastus2.azmk8s.io",
+      "*.microsoftonline.com",
+      "dc.services.visualstudio.com"     
+    ]
+
+    protocol {
+      port = "443"
+      type = "Https"
+    }
+  }
+}
+
+resource "azurerm_firewall_application_rule_collection" "flux-to-github" {
+  name                = "flux-to-github"
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 203
+  action              = "Allow"
+##########################
+# Needs to be tightened up
+  rule {
+    name             = "allow github"
+    source_addresses = ["*"]
+
+    target_fqdns = [
+      "github.com"     
+    ]
 
     protocol {
       port = "443"
