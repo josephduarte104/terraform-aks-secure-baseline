@@ -54,23 +54,6 @@ resource "azurerm_firewall_network_rule_collection" "dns" {
   }
 }
 
-resource "azurerm_firewall_network_rule_collection" "ssh" {
-  name                = "ssh"
-  azure_firewall_name = azurerm_firewall.fw.name
-  resource_group_name = var.resource_group
-  priority            = 103
-  action              = "Allow"
-
-  rule {
-    description           = "aks global requirements"
-    name                  = "allow network"
-    source_addresses      = ["*"]
-    destination_ports     = ["22"]
-    destination_addresses = ["*"]
-    protocols             = ["TCP"]
-  }
-}
-
 resource "azurerm_firewall_network_rule_collection" "tunnelfront" {
   name                = "tunnelfront"
   azure_firewall_name = azurerm_firewall.fw.name
@@ -88,7 +71,26 @@ resource "azurerm_firewall_network_rule_collection" "tunnelfront" {
   }
 }
 
+resource "azurerm_firewall_network_rule_collection" "aks-global" {
+  name                = "aks-global"
+  count               = var.private_aks ? 0 : 1
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 103
+  action              = "Allow"
+
+  rule {
+    description           = "aks global requirements"
+    name                  = "allow network"
+    source_addresses      = ["*"]
+    destination_ports     = ["22","9000"]
+    destination_addresses = ["*"]
+    protocols             = ["TCP"]
+  }
+}
+
 resource "azurerm_firewall_network_rule_collection" "http-and-https" {
+  count               = var.private_aks ? 0 : 1
   name                = "http-and-https"
   azure_firewall_name = azurerm_firewall.fw.name
   resource_group_name = var.resource_group
@@ -227,34 +229,6 @@ resource "azurerm_firewall_application_rule_collection" "publicimages" {
   }
 }
 
-# Total hack to allow all outbound.  Should be changed
-resource "azurerm_firewall_application_rule_collection" "test" {
-  name                = "test"
-  azure_firewall_name = azurerm_firewall.fw.name
-  resource_group_name = var.resource_group
-  priority            = 104
-  action              = "Allow"
-
-  rule {
-    name             = "allow network"
-    source_addresses = ["*"]
-
-    target_fqdns = [
-      "*.bing.com",
-      "*"
-    ]
-
-    protocol {
-      port = "80"
-      type = "Http"
-    }
-
-    protocol {
-      port = "443"
-      type = "Https"
-    }
-  }
-}
 
 resource "azurerm_firewall_application_rule_collection" "nodes-to-api-server" {
   name                = "nodes-to-api-server"
@@ -262,8 +236,7 @@ resource "azurerm_firewall_application_rule_collection" "nodes-to-api-server" {
   resource_group_name = var.resource_group
   priority            = 200
   action              = "Allow"
-##########################
-# Needs to be tightened up
+  
   rule {
     name             = "allow api network"
     source_addresses = ["*"]
@@ -286,8 +259,7 @@ resource "azurerm_firewall_application_rule_collection" "azure-monitor" {
   resource_group_name = var.resource_group
   priority            = 201
   action              = "Allow"
-##########################
-# Needs to be tightened up
+  
   rule {
     name             = "allow azure-monitor"
     source_addresses = ["*"]
@@ -313,8 +285,7 @@ resource "azurerm_firewall_application_rule_collection" "azure-policy" {
   resource_group_name = var.resource_group
   priority            = 202
   action              = "Allow"
-##########################
-# Needs to be tightened up
+  
   rule {
     name             = "allow azure-monitor"
     source_addresses = ["*"]
@@ -349,6 +320,35 @@ resource "azurerm_firewall_application_rule_collection" "flux-to-github" {
     target_fqdns = [
       "github.com"     
     ]
+
+    protocol {
+      port = "443"
+      type = "Https"
+    }
+  }
+}
+
+# Total hack to allow all outbound.  Should be changed
+resource "azurerm_firewall_application_rule_collection" "test" {
+  name                = "test"
+  azure_firewall_name = azurerm_firewall.fw.name
+  resource_group_name = var.resource_group
+  priority            = 104
+  action              = "Allow"
+
+  rule {
+    name             = "allow network"
+    source_addresses = ["*"]
+
+    target_fqdns = [
+      "*.bing.com",
+      "*"
+    ]
+
+    protocol {
+      port = "80"
+      type = "Http"
+    }
 
     protocol {
       port = "443"

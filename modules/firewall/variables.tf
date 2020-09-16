@@ -28,3 +28,9 @@ variable tags {
   description = "Tags to apply to resources"
   default     = null
 }
+
+variable private_aks {
+  type        = bool
+  description = "Is this cluster private or public?"
+  default     = false
+}

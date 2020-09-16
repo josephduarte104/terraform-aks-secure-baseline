@@ -24,3 +24,9 @@ variable "subnet_id" {
   description = "Gateway subnet id"
   type        = string 
 }
+
+variable "backend_ip_addresses" {
+  description = "backend ip addresses for pool"
+  type        = list(string)
+  default     = null
+}
