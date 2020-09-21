@@ -30,3 +30,9 @@ variable "backend_ip_addresses" {
   type        = list(string)
   default     = null
 }
+
+variable "identity_ids" {
+  description = "user assigned identity for app gateway"
+  type        = list(string)
+  default     = null
+}

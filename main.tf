@@ -1,13 +1,22 @@
 locals {
   # All variables used in this file should be 
   # added as locals here 
-  location                  = var.location
-  
+  location       = var.location
+  prefix         = var.prefix != null ? var.prefix : random_pet.petname.id 
+  vault_name     = "${local.prefix}-vault"
+  registry_name  = "${local.prefix}-acr"
   # Common tags should go here
   tags           = {
-    created_by = "Terraform"
+    created_by   = "Terraform"
   }
 }
+
+resource "random_pet" "petname" {
+  length        = 2
+  separator     = "-"
+}
+
+data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "hub-rg" {
   name     = "AKS2-HUB-RG" 
@@ -27,23 +36,31 @@ module "hub_network" {
   resource_group_name = azurerm_resource_group.hub-rg.name 
   location            = var.location
   vnet_name           = "vnet-hub" 
-  address_space       = ["10.0.0.0/22"]
+  address_space       = ["10.200.0.0/24"]
   subnets = [
     {
       name : "AzureFirewallSubnet"
-      address_prefixes : ["10.0.0.0/24"]
+      address_prefixes : ["10.200.0.0/26"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false
     },
     {
       name : "GatewaySubnet"
-      address_prefixes : ["10.0.1.0/24"]
+      address_prefixes : ["10.200.0.64/27"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false
     },
     {
       name : "AzureBastionSubnet"
-      address_prefixes : ["10.0.2.0/24"]
+      address_prefixes : ["10.200.0.96/27"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false
     },
     {
-      name : "Default"
-      address_prefixes : ["10.0.3.0/24"]
+      name : "default"
+      address_prefixes : ["10.200.0.128/27"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false
     }
   ]
 }
@@ -54,19 +71,31 @@ module "spoke_network" {
   resource_group_name = azurerm_resource_group.app-rg.name 
   location            = var.location
   vnet_name           = "vnet-spoke-app1"
-  address_space       = ["10.0.4.0/22"]
+  address_space       = ["10.240.0.0/16"]
   subnets = [
     {
       name : "clusternodes"
-      address_prefixes : ["10.0.5.0/24"]
+      address_prefixes : ["10.240.0.0/22"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false
     },
     {
       name : "clusteringressservices"
-      address_prefixes : ["10.0.6.0/24"]
+      address_prefixes : ["10.240.4.0/28"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false
     },
     {
       name : "applicationgateways"
-      address_prefixes : ["10.0.7.0/24"]
+      address_prefixes : ["10.240.4.16/28"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false
+    },
+    {
+      name : "privatelinks"
+      address_prefixes : ["10.240.4.32/28"]
+      private_link_endpoint_policies_enforced: true
+      private_link_service_policies_enforced: false
     }
   ]
 }
@@ -114,17 +143,18 @@ module "appgateway" {
   location                = var.location
   resource_group          = azurerm_resource_group.app-rg.name 
   subnet_id               = module.spoke_network.subnet_ids["applicationgateways"]
-  backend_ip_addresses    = ["10.0.6.6"]
+  backend_ip_addresses    = ["10.240.4.4"]
+  identity_ids            = [azurerm_user_assigned_identity.appw-to-keyvault.id]
 
   depends_on              = [module.spoke_network]
 }
 
 module "azure_aks" {
-  depends_on                        = [module.routetable]
+  depends_on                        = [module.routetable, azurerm_container_registry.acr]
 
   source                            = "./modules/azure_aks"
   name                              = "bg-aks"
-  container_registry_id             = null
+  container_registry_id             = azurerm_container_registry.acr.id 
   control_plane_kubernetes_version  = "1.17.9"
   resource_group_name               = azurerm_resource_group.app-rg.name
   location                          = var.location
@@ -200,6 +230,155 @@ resource "azurerm_bastion_host" "bastion" {
     subnet_id            = module.hub_network.subnet_ids["AzureBastionSubnet"]
     public_ip_address_id = azurerm_public_ip.bastion.id
   }
+}
+
+resource "azurerm_key_vault" "vault" {
+  name                  = replace(local.vault_name, "-", "")
+  location              = var.location
+  resource_group_name   = azurerm_resource_group.app-rg.name
+  sku_name              = "standard"
+  tenant_id             = data.azurerm_client_config.current.tenant_id
+  tags                  = local.tags
+  
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = module.azure_aks.principal_id
+
+    key_permissions = [
+      "get","list","create","delete","encrypt","decrypt","unwrapKey","wrapKey"
+    ]
+
+    secret_permissions = [
+      "get","list","set","delete"
+    ]
+  } 
+  
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    key_permissions = [
+      "get","list","create","delete","encrypt","decrypt","unwrapKey","wrapKey"
+    ]
+
+    secret_permissions = [
+      "get","list","set","delete"
+    ]
+  } 
+  
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = azurerm_user_assigned_identity.aksic-to-keyvault.principal_id
+    
+    key_permissions = [
+      "get"
+    ]
+
+    secret_permissions = [
+      "get"
+    ]
+  } 
+  
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = azurerm_user_assigned_identity.appw-to-keyvault.principal_id
+
+    key_permissions = [
+      "get"
+    ]
+
+    secret_permissions = [
+      "get"
+    ]
+  } 
+}
+
+# output managed_id {
+#   value = azurerm_user_assigned_identity.appw-to-keyvault.principal_id 
+# }
+
+resource "azurerm_container_registry" "acr" {
+  name                     = replace(local.registry_name, "-", "")
+  resource_group_name      = azurerm_resource_group.app-rg.name
+  location                 = var.location
+  sku                      = "Premium"
+  admin_enabled            = false
+}
+
+resource "azurerm_private_endpoint" "akv-endpoint" {
+  name                = "nodepool-to-akv" 
+  location            = var.location
+  resource_group_name = azurerm_resource_group.app-rg.name
+  subnet_id           = module.spoke_network.subnet_ids["privatelinks"]
+
+  private_service_connection {
+    name                            = "nodepoolsubnet-to-akv" 
+    private_connection_resource_id  = azurerm_key_vault.vault.id
+    is_manual_connection            = false
+    subresource_names               = ["vault"]
+  }
+}
+
+resource "azurerm_private_endpoint" "acr-endpoint" {
+  name                = "nodepool-to-acr" 
+  location            = var.location
+  resource_group_name = azurerm_resource_group.app-rg.name
+  subnet_id           = module.spoke_network.subnet_ids["privatelinks"]
+
+  private_service_connection {
+    name                            = "nodepoolsubnet-to-acr" 
+    private_connection_resource_id  = azurerm_container_registry.acr.id
+    is_manual_connection            = false
+    subresource_names               = ["registry"]
+  }
+}
+
+resource "azurerm_private_dns_zone" "dns-zone" {
+  name                = "privatelink.azure.net"
+  resource_group_name = azurerm_resource_group.app-rg.name
+  tags                = local.tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "hublink" {
+  name                  = "hubnetdnsconfig"
+  resource_group_name   = azurerm_resource_group.app-rg.name 
+  private_dns_zone_name = azurerm_private_dns_zone.dns-zone.name
+  virtual_network_id    = module.spoke_network.vnet_id
+  tags                  = local.tags
+}
+
+resource "azurerm_private_dns_a_record" "acr-dnsrecord" {
+  name                = azurerm_container_registry.acr.name
+  zone_name           = azurerm_private_dns_zone.dns-zone.name 
+  resource_group_name = azurerm_resource_group.app-rg.name
+  ttl                 = 300
+  records             = [azurerm_private_endpoint.acr-endpoint.private_service_connection[0].private_ip_address]
+
+  depends_on          = [azurerm_private_endpoint.acr-endpoint]
+}
+
+resource "azurerm_private_dns_a_record" "akv-dnsrecord" {
+  name                = azurerm_key_vault.vault.name
+  zone_name           = azurerm_private_dns_zone.dns-zone.name 
+  resource_group_name = azurerm_resource_group.app-rg.name
+  ttl                 = 300
+  records             = [azurerm_private_endpoint.akv-endpoint.private_service_connection[0].private_ip_address]
+  
+  depends_on          = [azurerm_private_endpoint.akv-endpoint]
+}
+
+resource "azurerm_user_assigned_identity" "appw-to-keyvault" {
+  resource_group_name = azurerm_resource_group.app-rg.name
+  location            = azurerm_resource_group.app-rg.location
+  tags                = local.tags
+  name                = "appw-to-keyvault"
+}
+
+resource "azurerm_user_assigned_identity" "aksic-to-keyvault" {
+  resource_group_name = azurerm_resource_group.app-rg.name
+  location            = azurerm_resource_group.app-rg.location
+  tags                = local.tags
+  name                = "aksic-to-keyvault"
 }
 
 # module "jumpbox" {

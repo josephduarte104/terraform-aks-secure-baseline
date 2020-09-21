@@ -1,6 +1,6 @@
 variable "prefix" {
   type                      = string
-  default                   = "gaf"
+  default                   = "terra-gaf"
   description               = "A prefix used for all resources"
 }
 
