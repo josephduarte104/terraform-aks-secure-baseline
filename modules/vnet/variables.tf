@@ -18,15 +18,19 @@ variable address_space {
   type        = list(string)
 }
 
-variable subnets {
-  description = "Subnets configuration"
-  type = list(object({
-    name             = string
-    address_prefixes = list(string)
-  }))
-}
-
 variable tags {
   description = "Tags to apply to resources"
   default     = null
+}
+
+# This is only used for the defaults.  Use subnet below to interact with this module
+variable subnets {
+  type = list(
+    object({
+      name                            = string
+      address_prefixes                = list(string)
+      private_link_endpoint_policies_enforced  = bool 
+      private_link_service_policies_enforced  = bool 
+    })
+  )
 }
