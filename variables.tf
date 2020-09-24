@@ -9,4 +9,3 @@ variable "location" {
   default                   = "eastus"
   description               = "The Azure Region used"
 }
-

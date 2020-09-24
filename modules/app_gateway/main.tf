@@ -9,7 +9,9 @@ resource "azurerm_public_ip" "appgwpip" {
 
 # since these variables are re-used - a locals block makes this more maintainable
 locals {
-  backend_address_pool_name      = "${var.name}-beap"
+  backend_address_pool_blue      = "${var.name}-blue"
+  backend_address_pool_green     = "${var.name}-green"
+  backend_address_pool_name      = var.active_backend == "blue" ? local.backend_address_pool_blue : local.backend_address_pool_green
   frontend_port_name             = "${var.name}-feport"
   frontend_ip_configuration_name = "${var.name}-feip"
   http_setting_name              = "${var.name}-be-htst"
@@ -50,8 +52,13 @@ resource "azurerm_application_gateway" "network" {
   }
 
   backend_address_pool {
-    name                = local.backend_address_pool_name
-    ip_addresses        = var.backend_ip_addresses
+    name                = local.backend_address_pool_blue
+    ip_addresses        = var.blue_backend_ip_addresses
+  }
+  
+  backend_address_pool {
+    name                = local.backend_address_pool_green
+    ip_addresses        = var.green_backend_ip_addresses
   }
 
   backend_http_settings {
