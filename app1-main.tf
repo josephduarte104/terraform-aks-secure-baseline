@@ -108,7 +108,7 @@ module "azure_aks" {
     user_min_count                  = 1 
     user_max_count                  = 3
     system_vm_size                  = "Standard_D2_v2"
-    user_vm_size                    = "Standard_D1_v2"
+    user_vm_size                    = "Standard_D2_v2"
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
@@ -116,6 +116,12 @@ module "azure_aks" {
   }
 }
 
+
+resource "azurerm_role_assignment" "Contributor" {
+  role_definition_name        = "Contributor"
+  scope                       = azurerm_resource_group.app-rg.id
+  principal_id                = module.azure_aks.principal_id
+}
 
 # App gateway is a hub component but is listed here because it more closely aligns with the workload
 # in this particular configuration.  Since we are using one app gateway per application
@@ -135,12 +141,6 @@ module "appgateway" {
 }
 
 
-resource "azurerm_role_assignment" "Contributor" {
-  role_definition_name        = "Contributor"
-  scope                       = azurerm_resource_group.app-rg.id
-  principal_id                = module.azure_aks.principal_id
-}
-
 resource "azurerm_key_vault" "vault" {
   name                  = replace(local.vault_name, "-", "")
   location              = local.location
@@ -149,18 +149,18 @@ resource "azurerm_key_vault" "vault" {
   tenant_id             = data.azurerm_client_config.current.tenant_id
   tags                  = local.tags
   
-  access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = module.azure_aks.principal_id
+  # access_policy {
+  #   tenant_id = data.azurerm_client_config.current.tenant_id
+  #   object_id = module.azure_aks.principal_id
 
-    key_permissions = [
-      "get","list","create","delete","encrypt","decrypt","unwrapKey","wrapKey"
-    ]
+  #   key_permissions = [
+  #     "get","list","create","delete","encrypt","decrypt","unwrapKey","wrapKey"
+  #   ]
 
-    secret_permissions = [
-      "get","list","set","delete"
-    ]
-  } 
+  #   secret_permissions = [
+  #     "get","list","set","delete"
+  #   ]
+  # } 
   
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
