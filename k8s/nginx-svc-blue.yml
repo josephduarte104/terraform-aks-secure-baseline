@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-blue-dep
+spec:
+  selector:
+    matchLabels:
+      app: nginx-blue
+  template:
+    metadata:
+      labels:
+        app: nginx-blue
+    spec:
+      nodeSelector:
+        nodepoolcolor: blue
+        nodepoolmode: user
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+        resources: 
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "350m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-blue-svc
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-blue
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: nginx-blue-ing
+  annotations:
+    kubernetes.io/ingress.class: blue
+    nginx.ingress.kubernetes.io/ingress.class: blue
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: nginx-blue-svc
+          servicePort: 80
+        path: /nginx(/|$)(.*)
+      - backend:
+          serviceName: nginx-blue-svc
+          servicePort: 80
+        path: /(.*)

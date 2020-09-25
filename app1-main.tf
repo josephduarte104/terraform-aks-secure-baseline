@@ -108,7 +108,7 @@ module "azure_aks" {
     user_min_count                  = 1 
     user_max_count                  = 3
     system_vm_size                  = "Standard_D2_v2"
-    user_vm_size                    = "Standard_D2_v2"
+    user_vm_size                    = "Standard_D1_v2"
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
