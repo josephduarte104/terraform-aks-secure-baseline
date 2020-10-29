@@ -45,3 +45,26 @@ variable tags {
   default     = null
 }
 
+variable vnet1_network_gateway {
+  description = "Whether or not this VNet is a transient gateway"
+  type        = bool
+  default     = false
+}
+
+variable vnet1_use_remote_gateway {
+  description = "Whether or not to use remote gateway"
+  type        = bool
+  default     = false
+}
+
+variable vnet2_network_gateway {
+  description = "Whether or not this VNet is a transient gateway"
+  type        = bool
+  default     = false
+}
+
+variable vnet2_use_remote_gateway {
+  description = "Whether or not to use remote gateway"
+  type        = bool
+  default     = false
+}

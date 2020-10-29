@@ -81,7 +81,9 @@ variable "blue_pool" {
     user_min_count                 = number
     user_max_count                 = number
     system_vm_size                 = string
-    user_vm_size                   = string
+    user_vm_size                   = string 
+    system_disk_size               = number 
+    user_disk_size                 = number
     zones                          = list(string)
     node_os                        = string
     azure_tags                     = map(string)
@@ -99,6 +101,8 @@ variable "green_pool" {
     user_max_count                 = number
     system_vm_size                 = string
     user_vm_size                   = string
+    system_disk_size               = number 
+    user_disk_size                 = number 
     zones                          = list(string)
     node_os                        = string
     azure_tags                     = map(string)

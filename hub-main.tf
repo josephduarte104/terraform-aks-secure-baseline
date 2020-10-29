@@ -35,6 +35,12 @@ module "hub_network" {
       address_prefixes : ["10.200.0.128/27"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false
+    },
+    {
+      name : "other"
+      address_prefixes : ["10.200.0.160/27"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false
     }
   ]
 }

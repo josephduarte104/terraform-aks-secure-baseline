@@ -35,6 +35,12 @@ module "spoke_network" {
       address_prefixes : ["10.240.4.32/28"]
       private_link_endpoint_policies_enforced: true
       private_link_service_policies_enforced: false
+    },
+    {
+      name: "default",
+      address_prefixes : ["10.240.4.48/28"]
+      private_link_endpoint_policies_enforced: false
+      private_link_service_policies_enforced: false   
     }
   ]
 }
@@ -89,7 +95,9 @@ module "azure_aks" {
     user_min_count                  = 1 
     user_max_count                  = 6
     system_vm_size                  = "Standard_D2_v2"
-    user_vm_size                    = "Standard_D2_v2"
+    user_vm_size                    = "Standard_DS2_v2"
+    system_disk_size                = 128
+    user_disk_size                  = 512 
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
@@ -108,7 +116,9 @@ module "azure_aks" {
     user_min_count                  = 1 
     user_max_count                  = 3
     system_vm_size                  = "Standard_D2_v2"
-    user_vm_size                    = "Standard_D2_v2"
+    user_vm_size                    = "Standard_DS2_v2"
+    system_disk_size                = 128 
+    user_disk_size                  = 512 
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
@@ -290,16 +300,39 @@ resource "azurerm_user_assigned_identity" "aksic-to-keyvault" {
   name                = "aksic-to-keyvault"
 }
 
-# module "jumpbox" {
-#   source                  = "./modules/jumpbox"
-#   tags                    = local.tags
-#   location                = local.location
-#   resource_group          = azurerm_resource_group.app-rg.name 
-#   vnet_id                 = module.hub_network.vnet_id
-#   subnet_id               = module.hub_network.subnet_ids["Default"]
-#   dns_zone_name           = join(".", slice(split(".", module.azure_aks.private_fqdn), 1, length(split(".", module.azure_aks.private_fqdn)))) 
-#   dns_zone_resource_group = module.azure_aks.node_resource_group
-#   add_to_dns              = false
+module "jumpbox" {
+  source                  = "./modules/jumpbox"
+  tags                    = local.tags
+  location                = local.location
+  resource_group          = azurerm_resource_group.app-rg.name 
+  vnet_id                 = module.hub_network.vnet_id
+  subnet_id               = module.hub_network.subnet_ids["default"]
+  dns_zone_name           = join(".", slice(split(".", module.azure_aks.private_fqdn), 1, length(split(".", module.azure_aks.private_fqdn)))) 
+  dns_zone_resource_group = module.azure_aks.node_resource_group
+  add_to_dns              = false
 
-#   depends_on              = [module.azure_aks]
-# }
+  depends_on              = [module.azure_aks]
+}
+
+data "azurerm_virtual_network" "vpn-vnet" {
+  name                = "GW-VNET"
+  resource_group_name = "VPN-RG"
+}
+
+module "vnet_peering_vpn" {
+  source                  = "./modules/vnet_peering"
+  tags                    = local.tags
+  vnet_1_name             = "vnet-hub"
+  vnet_1_id               = module.hub_network.vnet_id
+  vnet_1_rg               = azurerm_resource_group.hub-rg.name
+  vnet_2_name             = data.azurerm_virtual_network.vpn-vnet.name 
+  vnet_2_id               = data.azurerm_virtual_network.vpn-vnet.id 
+  vnet_2_rg               = "VPN-RG" 
+  peering_name_1_to_2     = "HubToVPN"
+  peering_name_2_to_1     = "VPNToHub"
+  vnet1_network_gateway   = false 
+  vnet1_use_remote_gateway= true 
+  vnet2_network_gateway   = true 
+  vnet2_use_remote_gateway= false 
+}
+

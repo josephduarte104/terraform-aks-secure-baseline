@@ -73,8 +73,8 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-green-pool" {
   vm_size                         = var.green_pool.system_vm_size
   availability_zones              = ["1", "2", "3"]
   tags                            = var.green_pool.azure_tags
-  max_pods                        = 30
-  os_disk_size_gb                 = 128
+  max_pods                        = 30 
+  os_disk_size_gb                 = var.green_pool.system_disk_size 
   os_type                         = var.green_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
   node_labels                     = {
@@ -104,7 +104,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-green-pool" {
   availability_zones              = ["1", "2", "3"]
   tags                            = var.green_pool.azure_tags
   max_pods                        = 30
-  os_disk_size_gb                 = 128
+  os_disk_size_gb                 = var.green_pool.user_disk_size
   os_type                         = var.green_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
   node_labels                     = {
@@ -134,7 +134,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-blue-pool" {
   availability_zones              = ["1", "2", "3"]
   tags                            = var.blue_pool.azure_tags
   max_pods                        = 30
-  os_disk_size_gb                 = 128
+  os_disk_size_gb                 = var.blue_pool.system_disk_size
   os_type                         = var.blue_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
   node_labels                     = {
@@ -164,7 +164,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-blue-pool" {
   availability_zones              = ["1", "2", "3"]
   tags                            = var.blue_pool.azure_tags
   max_pods                        = 30
-  os_disk_size_gb                 = 128
+  os_disk_size_gb                 = var.blue_pool.user_disk_size
   os_type                         = var.blue_pool.node_os
   vnet_subnet_id                  = var.vnet_subnet_id
   node_labels                     = {
