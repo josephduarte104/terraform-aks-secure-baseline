@@ -41,10 +41,10 @@ resource "azurerm_kubernetes_cluster" "modaks" {
     enable_node_public_ip         = false
   }
   
-  identity {
-    type = "SystemAssigned"
+  service_principal {
+    client_id                     = var.client_id 
+    client_secret                 = var.client_secret
   }
-
   role_based_access_control {
     enabled = true
   }
@@ -52,9 +52,10 @@ resource "azurerm_kubernetes_cluster" "modaks" {
   network_profile {
     docker_bridge_cidr            = "172.18.0.1/16"
     dns_service_ip                = "172.16.0.10"
-    network_plugin                = "azure"
+    network_plugin                = "kubenet"
     outbound_type                 = "userDefinedRouting"
     service_cidr                  = "172.16.0.0/16"
+    pod_cidr                      = "172.15.0.0/16"
   }
 }
 
@@ -64,6 +65,8 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-green-pool" {
       node_count, node_labels, node_taints
     ]
   }
+  depends_on = [azurerm_kubernetes_cluster_node_pool.system-blue-pool, azurerm_kubernetes_cluster_node_pool.user-blue-pool]
+
   count                           = var.enable_green_pool ? 1 : 0
   kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
   mode                            = "System"
@@ -94,6 +97,9 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-green-pool" {
       node_count, node_labels, node_taints
     ]
   }
+  
+  depends_on = [azurerm_kubernetes_cluster_node_pool.system-blue-pool, azurerm_kubernetes_cluster_node_pool.user-blue-pool, azurerm_kubernetes_cluster_node_pool.system-green-pool]
+
   count                           = var.enable_green_pool ? 1 : 0
   kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
   mode                            = "User"
@@ -153,7 +159,10 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-blue-pool" {
     ignore_changes = [
       node_count, node_labels, node_taints
     ]
-  } 
+  }
+
+  depends_on                      = [azurerm_kubernetes_cluster_node_pool.system-blue-pool]
+
   count                           = var.enable_blue_pool ? 1 : 0
   kubernetes_cluster_id           = azurerm_kubernetes_cluster.modaks.id
   mode                            = "User"

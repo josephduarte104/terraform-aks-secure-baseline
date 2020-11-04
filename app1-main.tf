@@ -59,7 +59,7 @@ module "vnet_peering" {
 }
 
 module "azure_aks" {
-  depends_on                        = [module.routetable, azurerm_container_registry.acr]
+  depends_on                        = [module.routetable, azurerm_container_registry.acr, azuread_service_principal.aks-sp]
 
   source                            = "./modules/azure_aks"
   name                              = "bg-aks"
@@ -69,9 +69,11 @@ module "azure_aks" {
   location                          = local.location
   vnet_subnet_id                    = module.spoke_network.subnet_ids["clusternodes"]
   api_auth_ips                      = null
-  private_cluster                   = false 
+  private_cluster                   = true
   sla_sku                           = "Free"
-
+  client_id                         = azuread_service_principal.aks-sp.application_id
+  client_secret                     = azuread_service_principal_password.aks-sp-passwd.value
+  
   default_node_pool = {
     name                           = "default"
     vm_size                        = "Standard_D2_v2"
@@ -127,12 +129,6 @@ module "azure_aks" {
 }
 
 
-resource "azurerm_role_assignment" "Contributor" {
-  role_definition_name        = "Contributor"
-  scope                       = azurerm_resource_group.app-rg.id
-  principal_id                = module.azure_aks.principal_id
-}
-
 # App gateway is a hub component but is listed here because it more closely aligns with the workload
 # in this particular configuration.  Since we are using one app gateway per application
 module "appgateway" {
@@ -159,18 +155,6 @@ resource "azurerm_key_vault" "vault" {
   tenant_id             = data.azurerm_client_config.current.tenant_id
   tags                  = local.tags
   
-  # access_policy {
-  #   tenant_id = data.azurerm_client_config.current.tenant_id
-  #   object_id = module.azure_aks.principal_id
-
-  #   key_permissions = [
-  #     "get","list","create","delete","encrypt","decrypt","unwrapKey","wrapKey"
-  #   ]
-
-  #   secret_permissions = [
-  #     "get","list","set","delete"
-  #   ]
-  # } 
   
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
@@ -212,9 +196,6 @@ resource "azurerm_key_vault" "vault" {
   } 
 }
 
-# output managed_id {
-#   value = azurerm_user_assigned_identity.appw-to-keyvault.principal_id 
-# }
 
 resource "azurerm_container_registry" "acr" {
   name                     = replace(local.registry_name, "-", "")
@@ -320,6 +301,7 @@ data "azurerm_virtual_network" "vpn-vnet" {
 }
 
 module "vnet_peering_vpn" {
+  depends_on              = [module.hub_network] 
   source                  = "./modules/vnet_peering"
   tags                    = local.tags
   vnet_1_name             = "vnet-hub"
