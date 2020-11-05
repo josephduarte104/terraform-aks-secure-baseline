@@ -295,26 +295,26 @@ module "jumpbox" {
   depends_on              = [module.azure_aks]
 }
 
-data "azurerm_virtual_network" "vpn-vnet" {
-  name                = "GW-VNET"
-  resource_group_name = "VPN-RG"
-}
+# data "azurerm_virtual_network" "vpn-vnet" {
+#   name                = "GW-VNET"
+#   resource_group_name = "VPN-RG"
+# }
 
-module "vnet_peering_vpn" {
-  depends_on              = [module.hub_network] 
-  source                  = "./modules/vnet_peering"
-  tags                    = local.tags
-  vnet_1_name             = "vnet-hub"
-  vnet_1_id               = module.hub_network.vnet_id
-  vnet_1_rg               = azurerm_resource_group.hub-rg.name
-  vnet_2_name             = data.azurerm_virtual_network.vpn-vnet.name 
-  vnet_2_id               = data.azurerm_virtual_network.vpn-vnet.id 
-  vnet_2_rg               = "VPN-RG" 
-  peering_name_1_to_2     = "HubToVPN"
-  peering_name_2_to_1     = "VPNToHub"
-  vnet1_network_gateway   = false 
-  vnet1_use_remote_gateway= true 
-  vnet2_network_gateway   = true 
-  vnet2_use_remote_gateway= false 
-}
+# module "vnet_peering_vpn" {
+#   depends_on              = [module.hub_network] 
+#   source                  = "./modules/vnet_peering"
+#   tags                    = local.tags
+#   vnet_1_name             = "vnet-hub"
+#   vnet_1_id               = module.hub_network.vnet_id
+#   vnet_1_rg               = azurerm_resource_group.hub-rg.name
+#   vnet_2_name             = data.azurerm_virtual_network.vpn-vnet.name 
+#   vnet_2_id               = data.azurerm_virtual_network.vpn-vnet.id 
+#   vnet_2_rg               = "VPN-RG" 
+#   peering_name_1_to_2     = "HubToVPN"
+#   peering_name_2_to_1     = "VPNToHub"
+#   vnet1_network_gateway   = false 
+#   vnet1_use_remote_gateway= true 
+#   vnet2_network_gateway   = true 
+#   vnet2_use_remote_gateway= false 
+# }
 
