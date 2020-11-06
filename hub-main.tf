@@ -58,7 +58,7 @@ module "firewall" {
 module "routetable" {
   source              = "./modules/route_table"
   tags                = local.tags
-  resource_group      = azurerm_resource_group.hub-rg.name 
+  resource_group      = azurerm_resource_group.app-rg.name 
   location            = local.location
   rt_name             = "kubenetfw_fw_rt"
   r_name              = "kubenetfw_fw_r"

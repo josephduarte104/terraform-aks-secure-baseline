@@ -34,11 +34,11 @@ resource "azurerm_role_assignment" "contributor" {
   principal_id                = azuread_service_principal.aks-sp.id
 }
 
-resource "azurerm_role_assignment" "net-contributor" {
-  scope                       = azurerm_resource_group.hub-rg.id
-  role_definition_name        = "Network Contributor"
-  principal_id                = azuread_service_principal.aks-sp.id
-}
+# resource "azurerm_role_assignment" "net-contributor" {
+#   scope                       = azurerm_resource_group.hub-rg.id
+#   role_definition_name        = "Network Contributor"
+#   principal_id                = azuread_service_principal.aks-sp.id
+# }
 
 # resource "azurerm_role_assignment" "contributor" {
 #   scope                       = data.azurerm_subscription.primary.id
