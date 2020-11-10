@@ -86,7 +86,7 @@ installNginx() {
   COLOR=$1
   IP_ADDRESS=$2
   # Use Helm to deploy an NGINX ingress controller
-  helm install ingress-$COLOR ingress-nginx/ingress-nginx -f - \
+  helm install ingress-$COLOR ingress-nginx/ingress-nginx --wait -f - \
     --namespace nginx \
     --set controller.ingressClass=$COLOR \
     --set controller.replicaCount=2 \
@@ -126,7 +126,7 @@ echo "BLUE POOL is $BLUE"
 kubectl create namespace nginx
 
 # Add the ingress-nginx repository
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx 
 
 if [ $BLUE = "true" ]; then
   installNginx blue $BLUE_IP
