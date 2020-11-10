@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 BLUE="false"
 GREEN="false"
@@ -25,23 +25,26 @@ kubectl create namespace nginx
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 
 if [ $BLUE = "true" ]; then
+	IP=192.168.4.4
 	# Use Helm to deploy an NGINX ingress controller
 	helm install ingress-blue ingress-nginx/ingress-nginx -f - \
 	    --namespace nginx \
-            --set controller.ingressClass=blue \
+	    --set controller.ingressClass=blue \
 	    --set controller.replicaCount=2 \
 	    --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
 	    --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux \
-	    --set controller.service.loadBalancerIP=192.168.4.4 \
-            --set controller.nodeSelector.nodepoolcolor="blue" << EOF
+	    --set controller.service.loadBalancerIP=$IP \
+            --set controller.nodeSelector.nodepoolcolor=blue << EOF
 controller:
   service:
-    annotations
+    annotations:
       service.beta.kubernetes.io/azure-load-balancer-internal: "true"
       service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "clusteringressservices"
 EOF
 
-	cat <<EOF | kubectl apply -f -
+    	sleep 5; while echo && kubectl get service -n nginx --no-headers | grep blue | grep -v -E "($IP|<none>)"; do sleep 5; done
+
+cat <<EOF > nginx-blue.yaml 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -72,7 +75,6 @@ spec:
             memory: "128Mi"
             cpu: "350m"
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -86,7 +88,6 @@ spec:
     app: nginx-blue
   type: ClusterIP
 ---
-
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
@@ -110,26 +111,29 @@ spec:
            servicePort: 80
          path: /nginx(/|$)(.*)
 EOF
+
 fi
 
 if [ $GREEN = "true" ]; then
+	IP=192.168.4.5
 	# Use Helm to deploy an NGINX ingress controller
 	helm install ingress-green ingress-nginx/ingress-nginx -f - \
 	    --namespace nginx \
-            --set controller.ingressClass=green \
+	    --set controller.ingressClass=green \
 	    --set controller.replicaCount=2 \
 	    --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
 	    --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux \
-	    --set controller.service.loadBalancerIP=192.168.4.5 \
-            --set controller.nodeSelector.nodepoolcolor="green" << EOF
+	    --set controller.service.loadBalancerIP=$IP \
+            --set controller.nodeSelector.nodepoolcolor=green << EOF
 controller:
   service:
     annotations:
       service.beta.kubernetes.io/azure-load-balancer-internal: "true"
       service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "clusteringressservices"
 EOF
+    	sleep 5; while echo && kubectl get service -n nginx --no-headers | grep green | grep -v -E "($IP|<none>)"; do sleep 5; done
 
-	cat <<EOF | kubectl apply -f -
+cat <<EOF > nginx-green.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -160,7 +164,6 @@ spec:
             memory: "128Mi"
             cpu: "350m"
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -174,7 +177,6 @@ spec:
     app: nginx-green
   type: ClusterIP
 ---
-
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
@@ -199,4 +201,3 @@ spec:
          path: /nginx(/|$)(.*)
 EOF
 fi
-
