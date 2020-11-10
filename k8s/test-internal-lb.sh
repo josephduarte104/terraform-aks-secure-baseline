@@ -137,3 +137,7 @@ if [ $GREEN = "true" ]; then
   installNginx green $GREEN_IP
   writeYaml green
 fi
+
+kubectl apply -f nginx-blue.yaml
+
+kubectl apply -f nginx-green.yaml
