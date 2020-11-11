@@ -189,14 +189,20 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-blue-pool" {
 
 resource "null_resource" "drain-green" {
   triggers = {
-    drain_green   = var.drain_green_pool
-    raw_config    = azurerm_kubernetes_cluster.modaks.kube_config_raw
+    private_cluster   = var.private_cluster
+    drain_green       = var.drain_green_pool
+    raw_config        = azurerm_kubernetes_cluster.modaks.kube_config_raw
   }
+  #count        = var.drain_green_pool && !var.private_cluster ? 1 : 0
   count        = var.drain_green_pool ? 1 : 0
 
   provisioner "local-exec" {
     when    = destroy 
     command = <<EOF
+      if [ ${self.triggers.private_cluster} ]; then
+         echo "Cannot uncordon and taint nodes in a private cluster using these scripts. Skipping..."
+         exit 0
+      fi
       echo "Will untaint Green nodepool."
       for node in $(kubectl get nodes -l nodepoolcolor=green -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
         kubectl uncordon "$node" --kubeconfig <(echo $KUBECONFIG | base64 --decode)
@@ -211,6 +217,11 @@ resource "null_resource" "drain-green" {
 
   provisioner "local-exec" {
     command = <<EOF
+      if [ "${var.private_cluster}" == "true" ]; then
+         echo "Cannot drain a private cluster using these scripts"
+         exit 0
+      fi
+
       if [ "${var.enable_green_pool}" != "true" ]; then
         echo "Green pool is not enabled.  Cannot drain Blue pool."
         exit 0
@@ -254,14 +265,21 @@ resource "null_resource" "drain-green" {
 
 resource "null_resource" "drain-blue" {
   triggers = {
-    drain_blue    = var.drain_blue_pool
-    raw_config    = azurerm_kubernetes_cluster.modaks.kube_config_raw
+    private_cluster = var.private_cluster
+    drain_blue      = var.drain_blue_pool
+    raw_config      = azurerm_kubernetes_cluster.modaks.kube_config_raw
   }
+  
+  #count     = var.drain_blue_pool && !var.private_cluster ? 1 : 0
   count     = var.drain_blue_pool ? 1 : 0
 
   provisioner "local-exec" {
     when    = destroy 
     command = <<EOF
+      if [ ${self.triggers.private_cluster} ]; then
+         echo "Cannot uncordon and taint nodes in a private cluster using these scripts. Skipping..."
+         exit 0
+      fi
       echo "Will untaint Blue nodepool."
       for node in $(kubectl get nodes -l nodepoolcolor=blue -o name --kubeconfig <(echo $KUBECONFIG | base64 --decode)); do
         kubectl uncordon "$node" --kubeconfig <(echo $KUBECONFIG | base64 --decode)
@@ -276,6 +294,11 @@ resource "null_resource" "drain-blue" {
 
   provisioner "local-exec" {
     command = <<EOF
+      if [ "${var.private_cluster}" == "true" ]; then
+         echo "Cannot drain a private cluster using these scripts"
+         exit 0
+      fi
+
       if [ "${var.enable_blue_pool}" != "true" ]; then
         echo "Blue pool is not enabled.  Cannot drain Green pool."
         exit 0
