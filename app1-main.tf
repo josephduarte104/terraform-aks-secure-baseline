@@ -10,35 +10,35 @@ module "spoke_network" {
   resource_group_name = azurerm_resource_group.app-rg.name 
   location            = local.location
   vnet_name           = "vnet-spoke-app1"
-  address_space       = ["10.240.0.0/16"]
+  address_space       = ["192.168.0.0/16"]
   subnets = [
     {
       name : "clusternodes"
-      address_prefixes : ["10.240.0.0/22"]
+      address_prefixes : ["192.168.0.0/22"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false
     },
     {
       name : "clusteringressservices"
-      address_prefixes : ["10.240.4.0/28"]
+      address_prefixes : ["192.168.4.0/28"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false
     },
     {
       name : "applicationgateways"
-      address_prefixes : ["10.240.4.16/28"]
+      address_prefixes : ["192.168.4.16/28"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false
     },
     {
       name : "privatelinks"
-      address_prefixes : ["10.240.4.32/28"]
+      address_prefixes : ["192.168.4.32/28"]
       private_link_endpoint_policies_enforced: true
       private_link_service_policies_enforced: false
     },
     {
       name: "default",
-      address_prefixes : ["10.240.4.48/28"]
+      address_prefixes : ["192.168.4.48/28"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false   
     }
@@ -103,7 +103,7 @@ module "azure_aks" {
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
-    pool_kubernetes_version         = "1.17.9" 
+    pool_kubernetes_version         = "1.17.13" 
   }
 
   # enable_green_pool=true will ensure 2 node pools exist (greensystem, greenuser)
@@ -124,7 +124,7 @@ module "azure_aks" {
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
-    pool_kubernetes_version         = "1.17.9" 
+    pool_kubernetes_version         = "1.17.13" 
   }
 }
 
@@ -138,8 +138,8 @@ module "appgateway" {
   location                  = local.location
   resource_group            = azurerm_resource_group.app-rg.name 
   subnet_id                 = module.spoke_network.subnet_ids["applicationgateways"]
-  blue_backend_ip_addresses = ["10.240.4.4"]
-  green_backend_ip_addresses= ["10.240.4.5"]
+  blue_backend_ip_addresses = [cidrhost(module.spoke_network.address_prefix["clusteringressservices"][0], 4)]
+  green_backend_ip_addresses = [cidrhost(module.spoke_network.address_prefix["clusteringressservices"][0], 5)]
   active_backend            = var.active_backend_pool
   identity_ids              = [azurerm_user_assigned_identity.appw-to-keyvault.id]
 
