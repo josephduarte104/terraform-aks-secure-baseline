@@ -10,35 +10,35 @@ module "spoke_network" {
   resource_group_name = azurerm_resource_group.app-rg.name 
   location            = local.location
   vnet_name           = "vnet-spoke-app1"
-  address_space       = ["10.240.0.0/16"]
+  address_space       = ["192.168.0.0/16"]
   subnets = [
     {
       name : "clusternodes"
-      address_prefixes : ["10.240.0.0/22"]
+      address_prefixes : ["192.168.0.0/22"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false
     },
     {
       name : "clusteringressservices"
-      address_prefixes : ["10.240.4.0/28"]
+      address_prefixes : ["192.168.4.0/28"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false
     },
     {
       name : "applicationgateways"
-      address_prefixes : ["10.240.4.16/28"]
+      address_prefixes : ["192.168.4.16/28"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false
     },
     {
       name : "privatelinks"
-      address_prefixes : ["10.240.4.32/28"]
+      address_prefixes : ["192.168.4.32/28"]
       private_link_endpoint_policies_enforced: true
       private_link_service_policies_enforced: false
     },
     {
       name: "default",
-      address_prefixes : ["10.240.4.48/28"]
+      address_prefixes : ["192.168.4.48/28"]
       private_link_endpoint_policies_enforced: false
       private_link_service_policies_enforced: false   
     }
@@ -59,7 +59,7 @@ module "vnet_peering" {
 }
 
 module "azure_aks" {
-  depends_on                        = [module.routetable, azurerm_container_registry.acr]
+  depends_on                        = [module.routetable, azurerm_container_registry.acr, azuread_service_principal.aks-sp]
 
   source                            = "./modules/azure_aks"
   name                              = "bg-aks"
@@ -69,9 +69,11 @@ module "azure_aks" {
   location                          = local.location
   vnet_subnet_id                    = module.spoke_network.subnet_ids["clusternodes"]
   api_auth_ips                      = null
-  private_cluster                   = false 
+  private_cluster                   = true
   sla_sku                           = "Free"
-
+  client_id                         = azuread_service_principal.aks-sp.application_id
+  client_secret                     = azuread_service_principal_password.aks-sp-passwd.value
+  
   default_node_pool = {
     name                           = "default"
     vm_size                        = "Standard_D2_v2"
@@ -101,7 +103,7 @@ module "azure_aks" {
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
-    pool_kubernetes_version         = "1.17.9" 
+    pool_kubernetes_version         = "1.17.13" 
   }
 
   # enable_green_pool=true will ensure 2 node pools exist (greensystem, greenuser)
@@ -122,16 +124,10 @@ module "azure_aks" {
     zones                           = ["1", "2", "3"]
     node_os                         = "Linux"
     azure_tags                      = null
-    pool_kubernetes_version         = "1.17.9" 
+    pool_kubernetes_version         = "1.17.13" 
   }
 }
 
-
-resource "azurerm_role_assignment" "Contributor" {
-  role_definition_name        = "Contributor"
-  scope                       = azurerm_resource_group.app-rg.id
-  principal_id                = module.azure_aks.principal_id
-}
 
 # App gateway is a hub component but is listed here because it more closely aligns with the workload
 # in this particular configuration.  Since we are using one app gateway per application
@@ -142,8 +138,8 @@ module "appgateway" {
   location                  = local.location
   resource_group            = azurerm_resource_group.app-rg.name 
   subnet_id                 = module.spoke_network.subnet_ids["applicationgateways"]
-  blue_backend_ip_addresses = ["10.240.4.4"]
-  green_backend_ip_addresses= ["10.240.4.5"]
+  blue_backend_ip_addresses = [cidrhost(module.spoke_network.address_prefix["clusteringressservices"][0], 4)]
+  green_backend_ip_addresses = [cidrhost(module.spoke_network.address_prefix["clusteringressservices"][0], 5)]
   active_backend            = var.active_backend_pool
   identity_ids              = [azurerm_user_assigned_identity.appw-to-keyvault.id]
 
@@ -159,18 +155,6 @@ resource "azurerm_key_vault" "vault" {
   tenant_id             = data.azurerm_client_config.current.tenant_id
   tags                  = local.tags
   
-  # access_policy {
-  #   tenant_id = data.azurerm_client_config.current.tenant_id
-  #   object_id = module.azure_aks.principal_id
-
-  #   key_permissions = [
-  #     "get","list","create","delete","encrypt","decrypt","unwrapKey","wrapKey"
-  #   ]
-
-  #   secret_permissions = [
-  #     "get","list","set","delete"
-  #   ]
-  # } 
   
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
@@ -212,9 +196,6 @@ resource "azurerm_key_vault" "vault" {
   } 
 }
 
-# output managed_id {
-#   value = azurerm_user_assigned_identity.appw-to-keyvault.principal_id 
-# }
 
 resource "azurerm_container_registry" "acr" {
   name                     = replace(local.registry_name, "-", "")
@@ -298,41 +279,5 @@ resource "azurerm_user_assigned_identity" "aksic-to-keyvault" {
   location            = azurerm_resource_group.app-rg.location
   tags                = local.tags
   name                = "aksic-to-keyvault"
-}
-
-module "jumpbox" {
-  source                  = "./modules/jumpbox"
-  tags                    = local.tags
-  location                = local.location
-  resource_group          = azurerm_resource_group.app-rg.name 
-  vnet_id                 = module.hub_network.vnet_id
-  subnet_id               = module.hub_network.subnet_ids["default"]
-  dns_zone_name           = join(".", slice(split(".", module.azure_aks.private_fqdn), 1, length(split(".", module.azure_aks.private_fqdn)))) 
-  dns_zone_resource_group = module.azure_aks.node_resource_group
-  add_to_dns              = false
-
-  depends_on              = [module.azure_aks]
-}
-
-data "azurerm_virtual_network" "vpn-vnet" {
-  name                = "GW-VNET"
-  resource_group_name = "VPN-RG"
-}
-
-module "vnet_peering_vpn" {
-  source                  = "./modules/vnet_peering"
-  tags                    = local.tags
-  vnet_1_name             = "vnet-hub"
-  vnet_1_id               = module.hub_network.vnet_id
-  vnet_1_rg               = azurerm_resource_group.hub-rg.name
-  vnet_2_name             = data.azurerm_virtual_network.vpn-vnet.name 
-  vnet_2_id               = data.azurerm_virtual_network.vpn-vnet.id 
-  vnet_2_rg               = "VPN-RG" 
-  peering_name_1_to_2     = "HubToVPN"
-  peering_name_2_to_1     = "VPNToHub"
-  vnet1_network_gateway   = false 
-  vnet1_use_remote_gateway= true 
-  vnet2_network_gateway   = true 
-  vnet2_use_remote_gateway= false 
 }
 

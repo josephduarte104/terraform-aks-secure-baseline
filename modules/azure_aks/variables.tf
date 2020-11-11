@@ -3,6 +3,16 @@ variable "name" {
   type        = string
 }
 
+variable "client_id" {
+  description = "Service principal id"
+  type        = string
+}
+
+variable "client_secret" {
+  description = "Service principal password"
+  type        = string
+}
+
 variable "container_registry_id" {
   description = "Resource id of the ACR"
   type        = string

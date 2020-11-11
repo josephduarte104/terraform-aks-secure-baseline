@@ -1,4 +1,12 @@
 resource "azurerm_route_table" "rt" {
+  #Added ignore to route table because AKS makes changes to this
+  #This doesn't necessarily have to be here because AKS will add
+  #them back in if Terraform removes them, HOWEVER when Terraform
+  #runs there will be some amount of seconds where the routes change
+  #and will impact incoming/outgoing traffic.
+  lifecycle {
+    ignore_changes = ["route"]
+  }
   name                = var.rt_name
   tags                = var.tags
   location            = var.location

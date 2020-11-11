@@ -131,13 +131,13 @@ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 if [ $BLUE = "true" ]; then
   installNginx blue $BLUE_IP
   writeYaml blue
+  kubectl apply -f nginx-blue.yaml
 fi
 
 if [ $GREEN = "true" ]; then
   installNginx green $GREEN_IP
   writeYaml green
+  kubectl apply -f nginx-green.yaml
 fi
 
-kubectl apply -f nginx-blue.yaml
 
-kubectl apply -f nginx-green.yaml

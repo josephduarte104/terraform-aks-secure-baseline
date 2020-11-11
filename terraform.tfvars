@@ -1,4 +1,4 @@
-active_backend_pool = "blue"
+active_backend_pool = "green"
 enable_blue_pool    = true
 enable_green_pool   = true
 
