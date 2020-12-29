@@ -74,7 +74,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-green-pool" {
   orchestrator_version            = var.green_pool.pool_kubernetes_version
   node_count                      = var.green_pool.system_min_count 
   vm_size                         = var.green_pool.system_vm_size
-  availability_zones              = ["1", "2", "3"]
+  availability_zones              = ["1", "2"]
   tags                            = var.green_pool.azure_tags
   max_pods                        = 30 
   os_disk_size_gb                 = var.green_pool.system_disk_size 
@@ -107,7 +107,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-green-pool" {
   orchestrator_version            = var.green_pool.pool_kubernetes_version
   node_count                      = var.green_pool.user_min_count 
   vm_size                         = var.green_pool.user_vm_size
-  availability_zones              = ["1", "2", "3"]
+  availability_zones              = ["1", "2"]
   tags                            = var.green_pool.azure_tags
   max_pods                        = 30
   os_disk_size_gb                 = var.green_pool.user_disk_size
@@ -137,7 +137,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "system-blue-pool" {
   orchestrator_version            = var.blue_pool.pool_kubernetes_version
   node_count                      = var.blue_pool.system_min_count 
   vm_size                         = var.blue_pool.system_vm_size
-  availability_zones              = ["1", "2", "3"]
+  availability_zones              = ["1", "2"]
   tags                            = var.blue_pool.azure_tags
   max_pods                        = 30
   os_disk_size_gb                 = var.blue_pool.system_disk_size
@@ -170,7 +170,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "user-blue-pool" {
   orchestrator_version            = var.blue_pool.pool_kubernetes_version
   node_count                      = var.blue_pool.user_min_count 
   vm_size                         = var.blue_pool.user_vm_size
-  availability_zones              = ["1", "2", "3"]
+  availability_zones              = ["1", "2"]
   tags                            = var.blue_pool.azure_tags
   max_pods                        = 30
   os_disk_size_gb                 = var.blue_pool.user_disk_size

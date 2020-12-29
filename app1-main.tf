@@ -59,7 +59,7 @@ module "vnet_peering" {
 }
 
 module "azure_aks" {
-  depends_on                        = [module.routetable, azurerm_container_registry.acr, azuread_service_principal.aks-sp]
+  depends_on                        = [module.routetable, azurerm_container_registry.acr]
 
   source                            = "./modules/azure_aks"
   name                              = "bg-aks"
@@ -71,8 +71,8 @@ module "azure_aks" {
   api_auth_ips                      = null
   private_cluster                   = true
   sla_sku                           = "Free"
-  client_id                         = azuread_service_principal.aks-sp.application_id
-  client_secret                     = azuread_service_principal_password.aks-sp-passwd.value
+  client_id                         = "70c2ce94-4a30-4565-af82-9e0e56c47723"
+  client_secret                     = "N4CvtG4TN~D-w561PT7uu.GWIDVGTtH.3E"
   
   default_node_pool = {
     name                           = "default"
@@ -100,7 +100,7 @@ module "azure_aks" {
     user_vm_size                    = "Standard_DS2_v2"
     system_disk_size                = 128
     user_disk_size                  = 512 
-    zones                           = ["1", "2", "3"]
+    zones                           = ["1", "2"]
     node_os                         = "Linux"
     azure_tags                      = null
     pool_kubernetes_version         = "1.17.13" 
@@ -121,7 +121,7 @@ module "azure_aks" {
     user_vm_size                    = "Standard_DS2_v2"
     system_disk_size                = 128 
     user_disk_size                  = 512 
-    zones                           = ["1", "2", "3"]
+    zones                           = ["1", "2"]
     node_os                         = "Linux"
     azure_tags                      = null
     pool_kubernetes_version         = "1.17.13" 
